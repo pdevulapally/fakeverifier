@@ -330,10 +330,6 @@ export default function PricingPage() {
   }, []);
 
   const handleSelectPlan = async (tierId: string) => {
-    console.log('handleSelectPlan called with tierId:', tierId);
-    console.log('Current user:', user);
-    console.log('Selected payment frequency:', selectedPaymentFreq);
-    
     if (tierId === 'free') {
       toast.info('Free plan is already active!');
       return;
@@ -347,12 +343,9 @@ export default function PricingPage() {
     setIsLoading(true);
 
     try {
-      console.log('Getting user ID token...');
       // Get the current user's ID token for server-side verification
       const idToken = await user.getIdToken();
-      console.log('ID token obtained');
       
-      console.log('Creating checkout session...');
       // Create Stripe checkout session
       const response = await fetch('/api/create-checkout-session', {
         method: 'POST',
@@ -370,43 +363,35 @@ export default function PricingPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('API Error:', response.status, errorText);
-        throw new Error(`API Error: ${response.status} - ${errorText}`);
+        throw new Error(`Payment setup failed. Please try again or contact support.`);
       }
 
-      console.log('Response status:', response.status);
-      const responseData = await response.json();
-      console.log('Response data:', responseData);
-
-      const { sessionId, error } = responseData;
+      const { sessionId, error } = await response.json();
 
       if (error) {
         throw new Error(error);
       }
 
-      console.log('Loading Stripe...');
       // Check if Stripe publishable key is configured
       const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-      if (!stripePublishableKey || stripePublishableKey === 'pk_test_your_stripe_publishable_key_here') {
-        throw new Error('Stripe is not configured. Please set up your Stripe publishable key.');
+      if (!stripePublishableKey || stripePublishableKey.includes('your_stripe_publishable_key')) {
+        toast.error('Payment system is being configured. Please try again in a few minutes or contact support.');
+        return;
       }
       
       // Redirect to Stripe checkout
       const stripe = await loadStripe(stripePublishableKey);
-      console.log('Stripe loaded:', !!stripe);
-      console.log('Stripe publishable key configured:', !!stripePublishableKey);
       
       if (stripe) {
         const { error } = await stripe.redirectToCheckout({ sessionId });
         if (error) {
-          throw new Error(error.message);
+          throw new Error('Payment redirect failed. Please try again.');
         }
       } else {
-        throw new Error('Failed to load Stripe');
+        throw new Error('Payment system is temporarily unavailable. Please try again later.');
       }
     } catch (error: any) {
-      console.error('Payment error:', error);
-      toast.error(error.message || 'Failed to process payment');
+      toast.error('Payment processing failed. Please try again or contact support.');
     } finally {
       setIsLoading(false);
     }
