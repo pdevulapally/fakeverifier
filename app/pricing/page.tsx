@@ -346,19 +346,68 @@ export default function PricingPage() {
       return;
     }
 
-    // Handle Pro plan - redirect to contact for now (can be updated to Stripe later)
+    // Handle Pro plan - go to Stripe checkout
     if (tierId === 'pro') {
-      toast.success('Pro plan upgrade request received! Our team will contact you shortly.');
-      
-      // For now, redirect to contact section or send email
-      const contactSection = document.getElementById('contact');
-      if (contactSection) {
-        contactSection.scrollIntoView({ behavior: 'smooth' });
-      } else {
-        // Send email to sales team
-        const subject = encodeURIComponent('Pro Plan Upgrade Request');
-        const body = encodeURIComponent(`User ${user?.email || 'Not logged in'} requested Pro plan upgrade.\nPayment Frequency: ${selectedPaymentFreq}\n\nPlease contact them to complete the upgrade.`);
-        window.location.href = `mailto:sales@fakeverifier.com?subject=${subject}&body=${body}`;
+      if (!user) {
+        toast.error('Please sign in to upgrade your plan');
+        window.location.href = '/Login';
+        return;
+      }
+
+      setIsLoading(true);
+
+      try {
+        // Get the current user's ID token for server-side verification
+        const idToken = await user.getIdToken();
+        
+        // Create Stripe checkout session
+        const response = await fetch('/api/create-checkout-session', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            tierId,
+            paymentFrequency: selectedPaymentFreq,
+            userId: user.uid,
+            userEmail: user.email,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          throw new Error(`Payment setup failed. Please try again or contact support.`);
+        }
+
+        const { sessionId, error } = await response.json();
+
+        if (error) {
+          throw new Error(error);
+        }
+
+        // Get Stripe publishable key from environment
+        const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
+        if (!stripePublishableKey) {
+          toast.error('Payment system is not configured. Please contact support.');
+          return;
+        }
+        
+        // Redirect to Stripe checkout
+        const stripe = await loadStripe(stripePublishableKey);
+        
+        if (stripe) {
+          const { error } = await stripe.redirectToCheckout({ sessionId });
+          if (error) {
+            throw new Error('Payment redirect failed. Please try again.');
+          }
+        } else {
+          throw new Error('Payment system is temporarily unavailable. Please try again later.');
+        }
+      } catch (error: any) {
+        toast.error('Payment processing failed. Please try again or contact support.');
+      } finally {
+        setIsLoading(false);
       }
       return;
     }
@@ -575,9 +624,22 @@ export default function PricingPage() {
             </div>
           </Card>
         </motion.div>
-      </section>
+            </section>
     </div>
   );
-}
+ }
+
+// Load Stripe
+const loadStripe = async (publishableKey: string) => {
+  if (typeof window === 'undefined') return null;
+  
+  try {
+    const { loadStripe } = await import('@stripe/stripe-js');
+    return await loadStripe(publishableKey);
+  } catch (error) {
+    console.error('Failed to load Stripe:', error);
+    return null;
+  }
+};
 
 
