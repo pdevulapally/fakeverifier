@@ -3,9 +3,18 @@ import Stripe from 'stripe';
 import { adminAuth } from '@/lib/firebase-admin';
 
 // Initialize Stripe with secret key
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2023-10-16',
-});
+let stripe: Stripe | null = null;
+try {
+  if (process.env.STRIPE_SECRET_KEY) {
+    stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+      apiVersion: '2023-10-16',
+    });
+  } else {
+    console.error('STRIPE_SECRET_KEY environment variable is not set');
+  }
+} catch (error) {
+  console.error('Failed to initialize Stripe:', error);
+}
 
 // Rate limiting store (in production, use Redis)
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
@@ -34,22 +43,12 @@ export async function POST(request: NextRequest) {
   try {
     console.log('API route called: /api/create-checkout-session');
     
-    // Check if required environment variables are set
-    if (!process.env.STRIPE_SECRET_KEY) {
-      console.error('STRIPE_SECRET_KEY is not configured');
-      return NextResponse.json(
-        { error: 'Payment system is not configured. Please contact support.' },
-        { status: 500 }
-      );
-    }
-
-    if (!process.env.NEXT_PUBLIC_BASE_URL) {
-      console.error('NEXT_PUBLIC_BASE_URL is not configured');
-      return NextResponse.json(
-        { error: 'Application configuration is incomplete. Please contact support.' },
-        { status: 500 }
-      );
-    }
+    // Simple test to see if we can reach this point
+    console.log('Environment check:', {
+      hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_URL,
+      hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID,
+    });
 
     // Get client IP for rate limiting
     const clientIP = request.headers.get('x-forwarded-for') || 
@@ -156,9 +155,12 @@ export async function POST(request: NextRequest) {
 
     // Verify user from Firebase (server-side)
     try {
+      console.log('Starting Firebase verification...');
+      
       // Verify the user ID token (you'll need to pass this from the client)
       const authHeader = request.headers.get('authorization');
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('Missing authorization header');
         return NextResponse.json(
           { error: 'Missing or invalid authorization header' },
           { status: 401 }
@@ -166,10 +168,14 @@ export async function POST(request: NextRequest) {
       }
       
       const idToken = authHeader.split('Bearer ')[1];
+      console.log('Got ID token, length:', idToken.length);
+      
       const decodedToken = await adminAuth.verifyIdToken(idToken);
+      console.log('Token verified, user ID:', decodedToken.uid);
       
       // Verify the userId matches the authenticated user
       if (decodedToken.uid !== userId) {
+        console.log('User ID mismatch:', decodedToken.uid, 'vs', userId);
         return NextResponse.json(
           { error: 'User ID mismatch' },
           { status: 403 }
@@ -178,6 +184,7 @@ export async function POST(request: NextRequest) {
       
       // Verify the email matches
       if (decodedToken.email !== userEmail) {
+        console.log('Email mismatch:', decodedToken.email, 'vs', userEmail);
         return NextResponse.json(
           { error: 'Email mismatch' },
           { status: 403 }
@@ -207,6 +214,15 @@ export async function POST(request: NextRequest) {
 
     const amount = pricing[tierId as keyof typeof pricing][paymentFrequency as keyof typeof pricing.pro];
     const interval = paymentFrequency === 'yearly' ? 'year' : 'month';
+
+    // Check if Stripe is properly initialized
+    if (!stripe) {
+      console.error('Stripe is not initialized - missing environment variables');
+      return NextResponse.json(
+        { error: 'Payment system is not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
 
     // Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
