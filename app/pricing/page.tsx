@@ -278,10 +278,7 @@ const PricingCard = ({
               whileTap={{ scale: 0.98 }}
             >
               <Button
-                onClick={() => {
-                  console.log('Button clicked for tier:', tier.id);
-                  onSelectPlan(tier.id);
-                }}
+                onClick={() => onSelectPlan(tier.id)}
                 disabled={isLoading || tier.id === 'free'}
                 className={cn(
                   'h-12 w-full rounded-xl font-bold text-base transition-all duration-200 shadow-lg',
@@ -333,94 +330,37 @@ export default function PricingPage() {
   }, []);
 
   const handleSelectPlan = async (tierId: string) => {
-    console.log('Button clicked for tier:', tierId);
-    console.log('Current user:', user);
-    console.log('Selected payment frequency:', selectedPaymentFreq);
-    
     if (tierId === 'free') {
       toast.info('Free plan is already active!');
       return;
     }
 
-    // Handle Enterprise plan differently - redirect to contact form
+    // Handle Enterprise plan - redirect to contact form
     if (tierId === 'enterprise') {
-      console.log('Handling Enterprise plan - redirecting to contact section');
-      // Scroll to contact section or redirect to contact page
       const contactSection = document.getElementById('contact');
       if (contactSection) {
         contactSection.scrollIntoView({ behavior: 'smooth' });
       } else {
-        // If no contact section on this page, redirect to main page contact section
         window.location.href = '/#contact';
       }
       return;
     }
 
-    if (!user) {
-      toast.error('Please sign in to upgrade your plan');
-      // Redirect to login page
-      window.location.href = '/Login';
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Get the current user's ID token for server-side verification
-      const idToken = await user.getIdToken();
+    // Handle Pro plan - redirect to contact for now (can be updated to Stripe later)
+    if (tierId === 'pro') {
+      toast.success('Pro plan upgrade request received! Our team will contact you shortly.');
       
-      // Create Stripe checkout session
-      const response = await fetch('/api/create-checkout-session', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`,
-        },
-        body: JSON.stringify({
-          tierId,
-          paymentFrequency: selectedPaymentFreq,
-          userId: user.uid,
-          userEmail: user.email,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Checkout session error:', errorText);
-        throw new Error(`Payment setup failed. Please try again or contact support.`);
-      }
-
-      const { sessionId, error } = await response.json();
-
-      if (error) {
-        throw new Error(error);
-      }
-
-      // Get Stripe publishable key from environment
-      const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-      if (!stripePublishableKey) {
-        console.error('Stripe publishable key not found in environment variables');
-        toast.error('Payment system is not configured. Please contact support.');
-        return;
-      }
-      
-      // Redirect to Stripe checkout
-      const stripe = await loadStripe(stripePublishableKey);
-      
-      if (stripe) {
-        const { error } = await stripe.redirectToCheckout({ sessionId });
-        if (error) {
-          console.error('Stripe redirect error:', error);
-          throw new Error('Payment redirect failed. Please try again.');
-        }
+      // For now, redirect to contact section or send email
+      const contactSection = document.getElementById('contact');
+      if (contactSection) {
+        contactSection.scrollIntoView({ behavior: 'smooth' });
       } else {
-        throw new Error('Payment system is temporarily unavailable. Please try again later.');
+        // Send email to sales team
+        const subject = encodeURIComponent('Pro Plan Upgrade Request');
+        const body = encodeURIComponent(`User ${user?.email || 'Not logged in'} requested Pro plan upgrade.\nPayment Frequency: ${selectedPaymentFreq}\n\nPlease contact them to complete the upgrade.`);
+        window.location.href = `mailto:sales@fakeverifier.com?subject=${subject}&body=${body}`;
       }
-    } catch (error: any) {
-      console.error('Payment processing error:', error);
-      toast.error('Payment processing failed. Please try again or contact support.');
-    } finally {
-      setIsLoading(false);
+      return;
     }
   };
 
@@ -640,15 +580,4 @@ export default function PricingPage() {
   );
 }
 
-// Load Stripe
-const loadStripe = async (publishableKey: string) => {
-  if (typeof window === 'undefined') return null;
-  
-  try {
-    const { loadStripe } = await import('@stripe/stripe-js');
-    return await loadStripe(publishableKey);
-  } catch (error) {
-    console.error('Failed to load Stripe:', error);
-    return null;
-  }
-};
+
