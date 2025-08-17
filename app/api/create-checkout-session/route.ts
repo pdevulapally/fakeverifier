@@ -32,6 +32,25 @@ const RATE_LIMIT = {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('API route called: /api/create-checkout-session');
+    
+    // Check if required environment variables are set
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error('STRIPE_SECRET_KEY is not configured');
+      return NextResponse.json(
+        { error: 'Payment system is not configured. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
+    if (!process.env.NEXT_PUBLIC_BASE_URL) {
+      console.error('NEXT_PUBLIC_BASE_URL is not configured');
+      return NextResponse.json(
+        { error: 'Application configuration is incomplete. Please contact support.' },
+        { status: 500 }
+      );
+    }
+
     // Get client IP for rate limiting
     const clientIP = request.headers.get('x-forwarded-for') || 
                     request.headers.get('x-real-ip') || 
@@ -86,6 +105,8 @@ export async function POST(request: NextRequest) {
     // Parse request body
     const body = await request.json();
     const { tierId, paymentFrequency, userId, userEmail } = body;
+
+    console.log('Request body:', { tierId, paymentFrequency, userId, userEmail });
 
     // Input validation
     if (!tierId || !paymentFrequency || !userId || !userEmail) {
@@ -256,9 +277,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-// Additional security: Block non-POST requests
+// Test endpoint to verify route is accessible
 export async function GET() {
-  return NextResponse.json({ error: 'Method not allowed' }, { status: 405 });
+  return NextResponse.json({ 
+    message: 'API route is working',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
+      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_URL,
+    }
+  });
 }
 
 export async function PUT() {
