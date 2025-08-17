@@ -155,11 +155,13 @@ const PricingCard = ({
   paymentFrequency,
   onSelectPlan,
   isLoading,
+  authLoading,
 }: {
   tier: (typeof TIERS)[0];
   paymentFrequency: keyof typeof tier.price;
   onSelectPlan: (tierId: string) => void;
   isLoading: boolean;
+  authLoading: boolean;
 }) => {
   const price = tier.price[paymentFrequency];
   const isHighlighted = tier.highlighted;
@@ -277,9 +279,9 @@ const PricingCard = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-              <Button
-                onClick={() => onSelectPlan(tier.id)}
-                disabled={isLoading || tier.id === 'free'}
+                             <Button
+                 onClick={() => onSelectPlan(tier.id)}
+                 disabled={isLoading || authLoading || tier.id === 'free'}
                 className={cn(
                   'h-12 w-full rounded-xl font-bold text-base transition-all duration-200 shadow-lg',
                   isHighlighted 
@@ -288,12 +290,17 @@ const PricingCard = ({
                   tier.id === 'free' && 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-400 cursor-not-allowed hover:from-gray-100 hover:to-gray-200'
                 )}
               >
-                {isLoading ? (
-                  <div className="flex items-center gap-2">
-                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    <span>Processing...</span>
-                  </div>
-                ) : (
+                                 {isLoading ? (
+                   <div className="flex items-center gap-2">
+                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                     <span>Processing...</span>
+                   </div>
+                 ) : authLoading ? (
+                   <div className="flex items-center gap-2">
+                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                     <span>Loading...</span>
+                   </div>
+                 ) : (
                   <span className="flex items-center gap-2">
                     {tier.cta}
                     {tier.id !== 'free' && (
@@ -320,18 +327,35 @@ export default function PricingPage() {
   const [selectedPaymentFreq, setSelectedPaymentFreq] = useState<'monthly' | 'yearly'>(PAYMENT_FREQUENCIES[0]);
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   useEffect(() => {
+    console.log('Pricing page: Setting up auth listener');
+    
     // First try to get current user immediately
     const currentUser = getCurrentUser();
+    console.log('Pricing page: Current user from getCurrentUser():', currentUser ? currentUser.uid : 'null');
+    
     if (currentUser) {
       setUser(currentUser);
     }
     
     // Also listen for auth state changes
     const unsubscribe = onAuthStateChange((user) => {
+      console.log('Pricing page: Auth state changed:', user ? user.uid : 'null');
       setUser(user);
+      setAuthLoading(false);
     });
+    
+    // Set auth loading to false after a short delay if no user is found
+    const timer = setTimeout(() => {
+      setAuthLoading(false);
+    }, 1000);
+    
+    return () => {
+      unsubscribe();
+      clearTimeout(timer);
+    };
     
     return unsubscribe;
   }, []);
@@ -355,7 +379,10 @@ export default function PricingPage() {
 
     // Handle Pro plan - go to Stripe checkout
     if (tierId === 'pro') {
+      console.log('Pro plan clicked. Current user state:', user ? user.uid : 'null');
+      
       if (!user) {
+        console.log('No user found, redirecting to login');
         toast.error('Please sign in to upgrade your plan');
         window.location.href = '/Login';
         return;
@@ -481,13 +508,14 @@ export default function PricingPage() {
         {/* Pricing Cards */}
         <div className="grid w-full max-w-7xl grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-3 lg:items-stretch">
           {TIERS.map((tier, i) => (
-            <PricingCard
-              key={i}
-              tier={tier}
-              paymentFrequency={selectedPaymentFreq}
-              onSelectPlan={handleSelectPlan}
-              isLoading={isLoading}
-            />
+                         <PricingCard
+               key={i}
+               tier={tier}
+               paymentFrequency={selectedPaymentFreq}
+               onSelectPlan={handleSelectPlan}
+               isLoading={isLoading}
+               authLoading={authLoading}
+             />
           ))}
         </div>
 
