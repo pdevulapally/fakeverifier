@@ -4,7 +4,7 @@ import { adminAuth } from '@/lib/firebase-admin';
 
 // Initialize Stripe with secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-03-31.basil',
+  apiVersion: '2023-10-16',
 });
 
 // Rate limiting store (in production, use Redis)

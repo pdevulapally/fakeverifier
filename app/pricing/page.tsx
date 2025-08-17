@@ -5,7 +5,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { BadgeCheck, Shield, Zap, Crown, Bot, Globe, Clock, Sparkles } from 'lucide-react';
+import { BadgeCheck, Shield, Zap, Crown, Bot, Globe, Clock, Sparkles, Mail, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { getCurrentUser } from '@/lib/firebase';
@@ -278,7 +278,10 @@ const PricingCard = ({
               whileTap={{ scale: 0.98 }}
             >
               <Button
-                onClick={() => onSelectPlan(tier.id)}
+                onClick={() => {
+                  console.log('Button clicked for tier:', tier.id);
+                  onSelectPlan(tier.id);
+                }}
                 disabled={isLoading || tier.id === 'free'}
                 className={cn(
                   'h-12 w-full rounded-xl font-bold text-base transition-all duration-200 shadow-lg',
@@ -330,13 +333,33 @@ export default function PricingPage() {
   }, []);
 
   const handleSelectPlan = async (tierId: string) => {
+    console.log('Button clicked for tier:', tierId);
+    console.log('Current user:', user);
+    console.log('Selected payment frequency:', selectedPaymentFreq);
+    
     if (tierId === 'free') {
       toast.info('Free plan is already active!');
       return;
     }
 
+    // Handle Enterprise plan differently - redirect to contact form
+    if (tierId === 'enterprise') {
+      console.log('Handling Enterprise plan - redirecting to contact section');
+      // Scroll to contact section or redirect to contact page
+      const contactSection = document.getElementById('contact');
+      if (contactSection) {
+        contactSection.scrollIntoView({ behavior: 'smooth' });
+      } else {
+        // If no contact section on this page, redirect to main page contact section
+        window.location.href = '/#contact';
+      }
+      return;
+    }
+
     if (!user) {
       toast.error('Please sign in to upgrade your plan');
+      // Redirect to login page
+      window.location.href = '/Login';
       return;
     }
 
@@ -363,6 +386,7 @@ export default function PricingPage() {
 
       if (!response.ok) {
         const errorText = await response.text();
+        console.error('Checkout session error:', errorText);
         throw new Error(`Payment setup failed. Please try again or contact support.`);
       }
 
@@ -372,10 +396,11 @@ export default function PricingPage() {
         throw new Error(error);
       }
 
-      // Check if Stripe publishable key is configured
+      // Get Stripe publishable key from environment
       const stripePublishableKey = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY;
-      if (!stripePublishableKey || stripePublishableKey.includes('your_stripe_publishable_key')) {
-        toast.error('Payment system is being configured. Please try again in a few minutes or contact support.');
+      if (!stripePublishableKey) {
+        console.error('Stripe publishable key not found in environment variables');
+        toast.error('Payment system is not configured. Please contact support.');
         return;
       }
       
@@ -385,12 +410,14 @@ export default function PricingPage() {
       if (stripe) {
         const { error } = await stripe.redirectToCheckout({ sessionId });
         if (error) {
+          console.error('Stripe redirect error:', error);
           throw new Error('Payment redirect failed. Please try again.');
         }
       } else {
         throw new Error('Payment system is temporarily unavailable. Please try again later.');
       }
     } catch (error: any) {
+      console.error('Payment processing error:', error);
       toast.error('Payment processing failed. Please try again or contact support.');
     } finally {
       setIsLoading(false);
@@ -541,6 +568,72 @@ export default function PricingPage() {
               </p>
             </Card>
           </div>
+        </motion.div>
+
+        {/* Contact Section for Enterprise Sales */}
+        <motion.div 
+          id="contact"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.7 }}
+          className="w-full max-w-4xl space-y-6 sm:space-y-8"
+        >
+          <h2 className="text-2xl sm:text-3xl font-bold text-center">Contact Sales</h2>
+          <p className="text-center text-muted-foreground">
+            Ready to get started with our Enterprise plan? Our sales team is here to help you implement FakeVerifier at scale.
+          </p>
+          
+          <Card className="p-6 sm:p-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Get in Touch</h3>
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                      <Mail className="w-4 h-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Email</div>
+                      <div className="text-sm text-muted-foreground">sales@fakeverifier.com</div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                      <Phone className="w-4 h-4 text-green-600" />
+                    </div>
+                    <div>
+                      <div className="font-medium">Phone</div>
+                      <div className="text-sm text-muted-foreground">+1 (555) 123-4567</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold">Enterprise Features</h3>
+                <ul className="space-y-2 text-sm text-muted-foreground">
+                  <li>• Custom integrations & API access</li>
+                  <li>• Dedicated account manager</li>
+                  <li>• White-label solutions</li>
+                  <li>• Priority support & SLAs</li>
+                  <li>• Volume discounts</li>
+                </ul>
+              </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t">
+              <Button 
+                className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                size="lg"
+                onClick={() => {
+                  // Open email client or redirect to contact form
+                  window.location.href = 'mailto:sales@fakeverifier.com?subject=Enterprise%20Plan%20Inquiry';
+                }}
+              >
+                Contact Sales Team
+              </Button>
+            </div>
+          </Card>
         </motion.div>
       </section>
     </div>
