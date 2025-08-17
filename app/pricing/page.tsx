@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/card';
 import { BadgeCheck, Shield, Zap, Crown, Bot, Globe, Clock, Sparkles, Mail, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { getCurrentUser } from '@/lib/firebase';
+import { getCurrentUser, onAuthStateChange } from '@/lib/firebase';
 
 const PAYMENT_FREQUENCIES: ('monthly' | 'yearly')[] = ['monthly', 'yearly'];
 
@@ -322,11 +322,18 @@ export default function PricingPage() {
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
-    const loadUser = async () => {
-      const currentUser = getCurrentUser();
+    // First try to get current user immediately
+    const currentUser = getCurrentUser();
+    if (currentUser) {
       setUser(currentUser);
-    };
-    loadUser();
+    }
+    
+    // Also listen for auth state changes
+    const unsubscribe = onAuthStateChange((user) => {
+      setUser(user);
+    });
+    
+    return unsubscribe;
   }, []);
 
   const handleSelectPlan = async (tierId: string) => {
