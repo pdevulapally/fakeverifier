@@ -10,8 +10,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Mail, Lock, User, Chrome, Shield, ArrowLeft, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
+import { Mail, Lock, User, Shield, ArrowLeft, Eye, EyeOff, CheckCircle, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import GoogleLogo from '@/components/google-logo';
+import { validateEmail, validateEmailWithExistence } from '@/lib/email-validation';
 
 interface ValidationErrors {
   name?: string;
@@ -125,11 +127,112 @@ export default function SignupPage() {
     }
   }, [password]);
 
-  // Email validation
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  // Email existence check with debouncing
+  useEffect(() => {
+    const checkEmailExistence = async () => {
+      if (email) {
+        const isValidFormat = await validateEmailFormat(email);
+        if (isValidFormat) {
+          setEmailChecking(true);
+                     try {
+             const result = await validateEmailWithExistence(email);
+             setEmailExists(result.exists || false);
+                           setEmailDetails({
+                isDisposable: result.isDisposable,
+                isRole: result.isRole,
+                isFree: result.isFree,
+                isEducational: result.isEducational,
+                isBusiness: result.isBusiness,
+                confidence: result.confidence,
+                source: result.source,
+                mxRecord: result.mxRecord,
+                smtpCheck: result.smtpCheck,
+                catchAll: result.catchAll,
+                validSyntax: result.validSyntax,
+                validDomain: result.validDomain,
+                validMx: result.validMx,
+                validSmtp: result.validSmtp,
+                status: result.status,
+                subStatus: result.subStatus,
+                account: result.account,
+                domain: result.domain,
+                reason: result.reason,
+                sendex: result.sendex,
+                smtpCode: result.smtpCode,
+                smtpInfo: result.smtpInfo,
+                smtpHost: result.smtpHost,
+                firstname: result.firstname,
+                lastname: result.lastname,
+                gender: result.gender,
+                country: result.country,
+                region: result.region,
+                city: result.city,
+                zipcode: result.zipcode,
+                processedAt: result.processedAt
+              });
+           } catch (error) {
+             console.error('Email existence check failed:', error);
+             setEmailExists(null);
+             setEmailDetails(null);
+           } finally {
+             setEmailChecking(false);
+           }
+                 } else {
+           setEmailExists(null);
+           setEmailDetails(null);
+         }
+       } else {
+         setEmailExists(null);
+         setEmailDetails(null);
+       }
+    };
+
+    const timeoutId = setTimeout(checkEmailExistence, 1000); // 1 second debounce
+    return () => clearTimeout(timeoutId);
+  }, [email]);
+
+  // Email validation using the utility function
+  const validateEmailFormat = async (email: string): Promise<boolean> => {
+    const result = await validateEmail(email);
+    return result.isValid;
   };
+
+  // Enhanced email validation with existence check
+  const [emailExists, setEmailExists] = useState<boolean | null>(null);
+  const [emailChecking, setEmailChecking] = useState(false);
+  const [emailDetails, setEmailDetails] = useState<{
+    isDisposable?: boolean;
+    isRole?: boolean;
+    isFree?: boolean;
+    isEducational?: boolean;
+    isBusiness?: boolean;
+    confidence?: number;
+    source?: string;
+    mxRecord?: boolean;
+    smtpCheck?: boolean;
+    catchAll?: boolean;
+    validSyntax?: boolean;
+    validDomain?: boolean;
+    validMx?: boolean;
+    validSmtp?: boolean;
+    status?: string;
+    subStatus?: string;
+    account?: string;
+    domain?: string;
+    reason?: string;
+    sendex?: number;
+    smtpCode?: string;
+    smtpInfo?: string;
+    smtpHost?: string;
+    firstname?: string;
+    lastname?: string;
+    gender?: string;
+    country?: string;
+    region?: string;
+    city?: string;
+    zipcode?: string;
+    processedAt?: string;
+  } | null>(null);
 
   // Name validation
   const validateName = (name: string): boolean => {
@@ -137,7 +240,7 @@ export default function SignupPage() {
   };
 
   // Comprehensive validation
-  const validateForm = (): boolean => {
+  const validateForm = async (): Promise<boolean> => {
     const errors: ValidationErrors = {};
 
     // Name validation
@@ -150,8 +253,13 @@ export default function SignupPage() {
     // Email validation
     if (!email.trim()) {
       errors.email = 'Email is required';
-    } else if (!validateEmail(email)) {
-      errors.email = 'Please enter a valid email address';
+    } else {
+      const emailValidation = await validateEmail(email);
+      if (!emailValidation.isValid) {
+        errors.email = emailValidation.error || 'Please enter a valid email address';
+      } else if (emailExists === false) {
+        errors.email = 'This email address does not exist or is not accessible. Please use a valid email address.';
+      }
     }
 
     // Password validation
@@ -205,7 +313,7 @@ export default function SignupPage() {
       return;
     }
 
-    if (!validateForm()) {
+    if (!(await validateForm())) {
       setLoading(false);
       return;
     }
@@ -261,7 +369,11 @@ export default function SignupPage() {
         {/* Logo and Brand */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <Shield className="h-8 w-8 text-white" />
+            <img 
+              src="/Images/fakeverifier-official-logo.png" 
+              alt="FakeVerifier Logo" 
+              className="h-10 w-10 object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Create account</h1>
           <p className="text-slate-600">Join FakeVerifier to start verifying news</p>
@@ -329,17 +441,86 @@ export default function SignupPage() {
                   />
                   {email && (
                     <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                      {validateEmail(email) ? (
+                      {emailChecking ? (
+                        <div className="w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                      ) : emailExists === true ? (
                         <CheckCircle className="h-4 w-4 text-green-500" />
-                      ) : (
+                      ) : emailExists === false ? (
                         <XCircle className="h-4 w-4 text-red-500" />
+                      ) : (
+                        <CheckCircle className="h-4 w-4 text-yellow-500" />
                       )}
                     </div>
                   )}
                 </div>
-                {validationErrors.email && (
-                  <p className="text-sm text-red-500">{validationErrors.email}</p>
-                )}
+                                 {validationErrors.email && (
+                   <p className="text-sm text-red-500">{validationErrors.email}</p>
+                 )}
+                                   {emailDetails && emailExists === true && (
+                    <div className="text-xs text-green-600 mt-1">
+                      <div className="flex items-center gap-2">
+                        <span>✓ Verified via {emailDetails.source}</span>
+                        {emailDetails.confidence && (
+                          <span className="text-blue-600">
+                            ({emailDetails.confidence}% confidence)
+                          </span>
+                        )}
+                        {emailDetails.sendex && (
+                          <span className="text-purple-600">
+                            (Sendex: {emailDetails.sendex})
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {emailDetails.isEducational && (
+                          <span className="text-blue-600 bg-blue-50 px-1 rounded">Educational</span>
+                        )}
+                        {emailDetails.isBusiness && (
+                          <span className="text-blue-600 bg-blue-50 px-1 rounded">Business</span>
+                        )}
+                        {emailDetails.isFree && (
+                          <span className="text-gray-600 bg-gray-50 px-1 rounded">Free provider</span>
+                        )}
+                        {emailDetails.validSyntax && (
+                          <span className="text-green-600 bg-green-50 px-1 rounded">Valid syntax</span>
+                        )}
+                        {emailDetails.validDomain && (
+                          <span className="text-green-600 bg-green-50 px-1 rounded">Valid domain</span>
+                        )}
+                        {emailDetails.validMx && (
+                          <span className="text-green-600 bg-green-50 px-1 rounded">MX records</span>
+                        )}
+                        {emailDetails.validSmtp && (
+                          <span className="text-green-600 bg-green-50 px-1 rounded">SMTP verified</span>
+                        )}
+                        {emailDetails.catchAll && (
+                          <span className="text-yellow-600 bg-yellow-50 px-1 rounded">Catch-all</span>
+                        )}
+                        {emailDetails.status && (
+                          <span className={`px-1 rounded ${
+                            emailDetails.status === 'valid' ? 'text-green-600 bg-green-50' :
+                            emailDetails.status === 'invalid' ? 'text-red-600 bg-red-50' :
+                            'text-yellow-600 bg-yellow-50'
+                          }`}>
+                            {emailDetails.status}
+                          </span>
+                        )}
+                        {emailDetails.country && (
+                          <span className="text-purple-600 bg-purple-50 px-1 rounded">{emailDetails.country}</span>
+                        )}
+                        {emailDetails.firstname && emailDetails.lastname && (
+                          <span className="text-indigo-600 bg-indigo-50 px-1 rounded">
+                            {emailDetails.firstname} {emailDetails.lastname}
+                          </span>
+                        )}
+                      </div>
+                      {emailDetails.reason && (
+                        <div className="text-xs text-gray-600 mt-1">
+                          <span>Reason: {emailDetails.reason}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
               </div>
               
               {/* Password */}
@@ -529,7 +710,7 @@ export default function SignupPage() {
               disabled={loading}
               className="w-full h-12 border-slate-200 hover:border-slate-300 hover:bg-slate-50 font-medium"
             >
-              <Chrome className="mr-3 h-4 w-4" />
+              <GoogleLogo className="mr-3" size={20} />
               {loading ? 'Creating account...' : 'Sign up with Google'}
             </Button>
             

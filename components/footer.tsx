@@ -7,8 +7,11 @@ export function Footer() {
         <div className="grid md:grid-cols-4 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
-              <Shield className="h-8 w-8 text-blue-400" />
-              <span className="text-xl font-serif font-bold">fakeverifier</span>
+              <img 
+                src="/Images/fakeverifier-official-logo.png" 
+                alt="FakeVerifier Logo" 
+                className="h-16 w-16 object-contain"
+              />
             </div>
             <p className="text-slate-300 leading-relaxed mb-4">
               Empowering truth through AI-powered news verification. Join thousands of professionals who trust

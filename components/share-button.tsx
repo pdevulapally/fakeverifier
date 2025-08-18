@@ -44,29 +44,51 @@ export function ShareButton({ verificationData, className = "" }: ShareButtonPro
     url: shareUrl
   }
 
+  const canNativeShare = typeof window !== 'undefined' && typeof (navigator as any).share === 'function'
+
+  const handleCreateShareLink = async (): Promise<string> => {
+    try {
+      const res = await fetch('/api/share', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ verificationData })
+      })
+      if (!res.ok) throw new Error('Failed to create share link')
+      const data = await res.json()
+      return data.url as string
+    } catch (e) {
+      console.error(e)
+      toast.error('Could not create share link')
+      return shareUrl
+    }
+  }
+
   const handleShare = async (platform?: string) => {
     try {
-      if (platform === 'native' && navigator.share) {
-        await navigator.share(shareData)
+      const urlToShare = await handleCreateShareLink()
+      const data = { ...shareData, url: urlToShare }
+
+      if (platform === 'native' && typeof (navigator as any).share === 'function') {
+        await (navigator as any).share(data)
         return
       }
 
       let url = ''
       switch (platform) {
         case 'twitter':
-          url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`
+          url = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(urlToShare)}`
           break
         case 'facebook':
-          url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(shareUrl)}`
+          url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(urlToShare)}`
           break
         case 'linkedin':
-          url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`
+          url = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(urlToShare)}`
           break
         case 'email':
-          url = `mailto:?subject=${encodeURIComponent(shareData.title)}&body=${encodeURIComponent(shareText + '\n\n' + shareUrl)}`
+          url = `mailto:?subject=${encodeURIComponent(data.title)}&body=${encodeURIComponent(shareText + '\n\n' + urlToShare)}`
           break
         case 'sms':
-          url = `sms:?body=${encodeURIComponent(shareText + ' ' + shareUrl)}`
+          url = `sms:?body=${encodeURIComponent(shareText + ' ' + urlToShare)}`
           break
         default:
           break
@@ -83,7 +105,8 @@ export function ShareButton({ verificationData, className = "" }: ShareButtonPro
 
   const handleCopyLink = async () => {
     try {
-      await navigator.clipboard.writeText(shareUrl)
+      const urlToShare = await handleCreateShareLink()
+      await navigator.clipboard.writeText(urlToShare)
       setCopied(true)
       toast.success('Link copied to clipboard!')
       setTimeout(() => setCopied(false), 2000)
@@ -141,7 +164,7 @@ export function ShareButton({ verificationData, className = "" }: ShareButtonPro
 
             <div className="space-y-3">
               {/* Native Share */}
-              {navigator.share && (
+              {canNativeShare && (
                 <Button
                   onClick={() => handleShare('native')}
                   className="w-full justify-start"

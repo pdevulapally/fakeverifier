@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
             product_data: {
               name: `FakeVerifier ${tierId.charAt(0).toUpperCase() + tierId.slice(1)} Plan`,
               description: `${tierId === 'pro' ? '500' : '5000'} verification tokens per month`,
-              images: ['https://your-domain.com/fakeverifier-logo.png'], // Add your logo
+              images: ['https://fakeverifier.co.uk/fakeverifier-official-logo.png'], // FakeVerifier logo
             },
             unit_amount: amount,
             recurring: {

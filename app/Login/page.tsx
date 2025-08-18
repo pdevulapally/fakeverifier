@@ -9,8 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Separator } from '@/components/ui/separator';
-import { Mail, Lock, Chrome, Shield, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, Shield, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import GoogleLogo from '@/components/google-logo';
+import { validateEmail, validateEmailWithExistence } from '@/lib/email-validation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,6 +25,22 @@ export default function LoginPage() {
     e.preventDefault();
     setLoading(true);
     setError('');
+
+    // Validate email before attempting login
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || 'Please enter a valid email address');
+      setLoading(false);
+      return;
+    }
+
+    // Check if email exists
+    const existenceCheck = await validateEmailWithExistence(email);
+    if (!existenceCheck.exists) {
+      setError('This email address does not exist or is not accessible. Please use a valid email address.');
+      setLoading(false);
+      return;
+    }
 
     const result = await signInWithEmail(email, password);
     
@@ -67,7 +85,11 @@ export default function LoginPage() {
         {/* Logo and Brand */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-2xl mb-4 shadow-lg">
-            <Shield className="h-8 w-8 text-white" />
+            <img 
+              src="/Images/fakeverifier-official-logo.png" 
+              alt="FakeVerifier Logo" 
+              className="h-10 w-10 object-contain"
+            />
           </div>
           <h1 className="text-2xl font-bold text-slate-900 mb-2">Welcome back</h1>
           <p className="text-slate-600">Sign in to your FakeVerifier account</p>
@@ -149,7 +171,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full h-12 border-slate-200 hover:border-slate-300 hover:bg-slate-50 font-medium"
             >
-              <Chrome className="mr-3 h-4 w-4" />
+              <GoogleLogo className="mr-3" size={20} />
               {loading ? 'Signing in...' : 'Sign in with Google'}
             </Button>
             

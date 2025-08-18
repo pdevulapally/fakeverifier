@@ -139,6 +139,15 @@ export default function VerifyPage() {
     }
   }
 
+  const handleDeleteItem = async (id: string) => {
+    try {
+      await deleteVerificationData(id)
+      setVerificationHistory(prev => prev.filter(item => item.id !== id))
+    } catch (error) {
+      console.error('Error deleting verification:', error)
+    }
+  }
+
 
 
   const handleTokenDepleted = () => {
@@ -245,7 +254,11 @@ export default function VerifyPage() {
                         <Bot className="h-4 w-4 text-white" />
                       </div>
                       <div className="flex flex-col">
-                        <div className="text-sm font-semibold">FakeVerifier</div>
+                        <img 
+                          src="/Images/fakeverifier-official-logo.png" 
+                          alt="FakeVerifier Logo" 
+                          className="h-10 w-10 object-contain"
+                        />
                         <div className="text-xs text-muted-foreground">AI News Verification</div>
                       </div>
                     </SheetTitle>
@@ -385,10 +398,14 @@ export default function VerifyPage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
                   <Bot className="h-4 w-4 text-white" />
                 </div>
-                <div className="flex flex-col">
-                  <div className="text-sm font-semibold">FakeVerifier</div>
-                  <div className="text-xs text-muted-foreground">AI News Verification</div>
-                </div>
+                                      <div className="flex flex-col">
+                        <img 
+                          src="/Images/fakeverifier-official-logo.png" 
+                          alt="FakeVerifier Logo" 
+                          className="h-10 w-10 object-contain"
+                        />
+                        <div className="text-xs text-muted-foreground">AI News Verification</div>
+                      </div>
               </div>
             </div>
             <div className="flex items-center gap-2">
@@ -459,7 +476,11 @@ export default function VerifyPage() {
                     <Bot className="h-4 w-4 text-white" />
                   </div>
                   <div className="flex flex-col">
-                    <div className="text-sm font-semibold">FakeVerifier</div>
+                    <img 
+                      src="/Images/fakeverifier-official-logo.png" 
+                      alt="FakeVerifier Logo" 
+                      className="h-10 w-10 object-contain"
+                    />
                     <div className="text-xs text-sidebar-foreground/70">AI News Verification</div>
                   </div>
                 </div>
@@ -498,19 +519,7 @@ export default function VerifyPage() {
                 <SidebarSeparator />
 
                 <SidebarGroup>
-                  <div className="flex items-center justify-between">
-                    <SidebarGroupLabel>Recent Verifications</SidebarGroupLabel>
-                    {verificationHistory.length > 0 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleClearHistory}
-                        className="h-6 w-6 p-0 text-sidebar-foreground/50 hover:text-sidebar-foreground"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    )}
-                  </div>
+                  <SidebarGroupLabel>Recent Verifications</SidebarGroupLabel>
                   <SidebarGroupContent>
                     {isLoading ? (
                       <div className="flex items-center justify-center py-4">
@@ -531,7 +540,7 @@ export default function VerifyPage() {
                         {verificationHistory.slice(0, 5).map((item) => (
                           <div
                             key={item.id}
-                            className="flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent cursor-pointer transition-colors"
+                            className="group flex items-center gap-3 p-2 rounded-lg hover:bg-sidebar-accent cursor-pointer transition-colors relative"
                             onClick={() => handleHistoryItemClick(item)}
                           >
                             <div className="flex-shrink-0">
@@ -561,6 +570,17 @@ export default function VerifyPage() {
                                 </div>
                               </div>
                             </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                handleDeleteItem(item.id)
+                              }}
+                              className="h-6 w-6 p-0 text-sidebar-foreground/30 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
                           </div>
                         ))}
                       </div>

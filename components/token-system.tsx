@@ -107,8 +107,8 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
           }
         }
         
-        console.log('Token usage loaded:', data.used, '/', data.total)
-        setTokenUsage(data)
+                 console.log('Token usage loaded:', data.used, '/', data.total)
+         setTokenUsage(data)
       } else {
         console.error("Error loading token usage:", result.error)
       }
@@ -156,32 +156,35 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
   }
 
   const getPlanDetails = () => {
+    // Use the actual total tokens from the database instead of hardcoded values
+    const actualTokens = tokenUsage.total
+    
     switch (tokenUsage.plan) {
       case "free":
         return {
           name: "Free",
-          tokens: 50,
+          tokens: actualTokens,
           price: "$0",
           features: ["Basic verification", "Standard response time", "Community support"]
         }
       case "pro":
         return {
           name: "Pro",
-          tokens: 500,
+          tokens: actualTokens,
           price: "$9.99/month",
           features: ["Advanced verification", "Faster response time", "Priority support", "Custom sources"]
         }
       case "enterprise":
         return {
           name: "Enterprise",
-          tokens: 5000,
+          tokens: actualTokens,
           price: "$49.99/month",
           features: ["Unlimited verification", "Instant response", "Dedicated support", "API access", "Custom integrations"]
         }
       default:
         return {
           name: "Free",
-          tokens: 50,
+          tokens: actualTokens,
           price: "$0",
           features: ["Basic verification", "Standard response time", "Community support"]
         }
@@ -279,22 +282,22 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
 
 
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-2 gap-2">
-        <Button variant="outline" size="sm" className="text-xs">
-          <CreditCard className="w-4 h-4 mr-1" />
-          Billing
-        </Button>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          className="text-xs"
-          onClick={() => window.location.href = '/usage'}
-        >
-          <TrendingUp className="w-4 h-4 mr-1" />
-          Usage History
-        </Button>
-      </div>
+             {/* Quick Actions */}
+       <div className="grid grid-cols-2 gap-2">
+         <Button variant="outline" size="sm" className="text-xs">
+           <CreditCard className="w-4 h-4 mr-1" />
+           Billing
+         </Button>
+         <Button 
+           variant="outline" 
+           size="sm" 
+           className="text-xs"
+           onClick={() => window.location.href = '/usage'}
+         >
+           <TrendingUp className="w-4 h-4 mr-1" />
+           Usage History
+         </Button>
+       </div>
     </div>
   )
 }

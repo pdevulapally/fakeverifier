@@ -250,23 +250,24 @@ export const deleteVerificationData = async (verificationId: string) => {
       throw new Error('User not authenticated');
     }
 
-    // First, verify the user owns this document by querying it
-    const q = query(
-      collection(db, 'verifications'),
-      where('userId', '==', user.uid),
-      where('__name__', '==', verificationId)
-    );
+    console.log('Attempting to delete verification:', verificationId);
+    console.log('Current user:', user.uid);
 
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return { success: false, error: 'Verification not found or access denied' };
-    }
-
-    // Now delete the document
+    // Try to delete the document directly
+    // The security rules will handle the permission check
     await deleteDoc(doc(db, 'verifications', verificationId));
+    
+    console.log('Successfully deleted verification:', verificationId);
     return { success: true };
   } catch (error: any) {
+    const user = getCurrentUser();
     console.error('Error deleting verification data:', error);
+    console.error('Error details:', {
+      code: error.code,
+      message: error.message,
+      verificationId,
+      userId: user?.uid || 'unknown'
+    });
     return { success: false, error: error.message };
   }
 };
@@ -462,6 +463,49 @@ export const upgradeUserPlan = async (plan: "pro" | "enterprise") => {
     return { success: true, data: updatedUsage }
   } catch (error: any) {
     console.error('Error upgrading user plan:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+// Function to manually update user plan (for admin/debugging purposes)
+export const updateUserPlanManually = async (userId: string, plan: "free" | "pro" | "enterprise") => {
+  try {
+    const newTotal = plan === "free" ? 50 : plan === "pro" ? 500 : 5000
+
+    // Query the user's token usage document
+    const q = query(
+      collection(db, 'tokenUsage'),
+      where('userId', '==', userId),
+      limit(1)
+    )
+    const querySnapshot = await getDocs(q)
+    
+    if (querySnapshot.empty) {
+      // Create new token usage document if it doesn't exist
+      const defaultUsage: TokenUsage = {
+        userId: userId,
+        used: 0,
+        total: newTotal,
+        resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        plan: plan,
+        lastUpdated: new Date()
+      }
+      
+      const docRef = await addDoc(collection(db, 'tokenUsage'), defaultUsage)
+      return { success: true, data: { id: docRef.id, ...defaultUsage } }
+    }
+
+    const doc = querySnapshot.docs[0]
+    const updatedUsage = {
+      plan,
+      total: newTotal,
+      lastUpdated: new Date()
+    }
+
+    await updateDoc(doc.ref, updatedUsage)
+    return { success: true, data: { id: doc.id, ...doc.data(), ...updatedUsage } }
+  } catch (error: any) {
+    console.error('Error manually updating user plan:', error)
     return { success: false, error: error.message }
   }
 }

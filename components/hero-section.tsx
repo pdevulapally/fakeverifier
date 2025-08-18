@@ -7,12 +7,10 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import Link from "next/link"
 import { useAuth } from "@/lib/auth-context"
-import { useState } from "react"
-import { DemoModal } from "./demo-modal"
+ 
 
 export function HeroSection() {
   const { user } = useAuth();
-  const [showDemo, setShowDemo] = useState(false);
 
   return (
     <div className="bg-background relative w-full overflow-hidden">
@@ -49,7 +47,7 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="from-blue-600/10 via-foreground/85 to-foreground/50 bg-gradient-to-tl bg-clip-text text-center text-4xl tracking-tighter text-balance text-transparent sm:text-5xl md:text-6xl lg:text-7xl"
+            className="from-blue-600/10 via-foreground/85 to-foreground/50 bg-gradient-to-tl bg-clip-text text-center text-3xl tracking-tighter text-balance text-transparent sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl px-4 lg:px-0"
           >
             Stop Misinformation Before It Spreads
           </motion.h1>
@@ -59,7 +57,7 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="text-muted-foreground mx-auto mt-6 max-w-2xl text-center text-lg"
+            className="text-muted-foreground mx-auto mt-6 max-w-2xl text-center text-base sm:text-lg px-4 lg:px-0"
           >
             Harness cutting-edge AI to verify news credibility in real-time. Get instant credibility scores, source
             verification, and protect yourself from misinformation with our advanced verification technology.
@@ -70,31 +68,32 @@ export function HeroSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row"
+            className="mt-10 flex flex-col items-stretch justify-center gap-3 lg:flex-row w-full max-w-sm lg:max-w-none mx-auto px-4 lg:px-0"
           >
-            <Link href={user ? "/verify" : "/Signup"}>
+            <Link href={user ? "/verify" : "/Signup"} className="block w-full lg:w-auto">
               <Button
                 size="lg"
-                className="group bg-blue-600 text-white hover:shadow-blue-600/30 relative overflow-hidden rounded-full px-6 shadow-lg transition-all duration-300"
+                className="group bg-blue-600 text-white hover:shadow-blue-600/30 relative overflow-hidden rounded-full px-6 py-3 shadow-lg transition-all duration-300 w-full text-base"
               >
-                <span className="relative z-10 flex items-center">
-                  <Shield className="mr-2 h-4 w-4" />
+                <span className="relative z-10 flex items-center justify-center lg:justify-start">
+                  <Shield className="mr-2 h-4 w-4 flex-shrink-0" />
                   {user ? "Start Verifying Now" : "Get Started Free"}
-                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1" />
+                  <ArrowRight className="ml-2 h-4 w-4 transition-transform duration-300 group-hover:translate-x-1 flex-shrink-0" />
                 </span>
                 <span className="from-blue-600 via-blue-500 to-blue-600 absolute inset-0 z-0 bg-gradient-to-r opacity-0 transition-opacity duration-300 group-hover:opacity-100"></span>
               </Button>
             </Link>
 
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => setShowDemo(true)}
-              className="border-blue-200 bg-background/50 flex items-center gap-2 rounded-full backdrop-blur-sm"
-            >
-              <Sparkles className="h-4 w-4" />
-              Watch Demo
-            </Button>
+            <Link href="/about" className="block w-full lg:w-auto">
+              <Button
+                variant="outline"
+                size="lg"
+                className="border-blue-200 bg-background/50 flex items-center justify-center gap-2 rounded-full backdrop-blur-sm px-6 py-3 w-full text-base"
+              >
+                <Sparkles className="h-4 w-4 flex-shrink-0" />
+                Learn More
+              </Button>
+            </Link>
           </motion.div>
 
           {/* Feature Image */}
@@ -117,12 +116,12 @@ export function HeroSection() {
                   <div className="h-3 w-3 rounded-full bg-green-500"></div>
                 </div>
                 <div className="bg-background/50 text-muted-foreground mx-auto flex items-center rounded-md px-3 py-1 text-xs">
-                  https://fakeverifier.com/verify
+                  https://fakeverifier.co.uk/verify
                 </div>
               </div>
               <div className="relative">
                 <img
-                  src="/news-verification-dashboard.png"
+                  src="/Images/dashboard.png"
                   alt="FakeVerifier Dashboard Preview"
                   className="w-full"
                 />
@@ -142,8 +141,7 @@ export function HeroSection() {
         </div>
       </div>
 
-      {/* Demo Modal */}
-      <DemoModal isOpen={showDemo} onClose={() => setShowDemo(false)} />
+      
     </div>
   );
 }

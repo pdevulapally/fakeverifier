@@ -46,6 +46,7 @@ interface VerificationHistory {
 interface VerifySidebarProps {
   onNewVerification?: () => void
   onHistoryItemClick?: (item: VerificationHistory) => void
+  onDeleteItem?: (id: string) => void
   verificationHistory?: VerificationHistory[]
   onClearHistory?: () => void
   isLoading?: boolean
@@ -54,6 +55,7 @@ interface VerifySidebarProps {
 export function VerifySidebar({ 
   onNewVerification, 
   onHistoryItemClick, 
+  onDeleteItem,
   verificationHistory = [], 
   onClearHistory,
   isLoading = false
@@ -137,6 +139,13 @@ export function VerifySidebar({
     }
   }
 
+  const handleDeleteItem = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation() // Prevent triggering the item click
+    if (onDeleteItem) {
+      onDeleteItem(id)
+    }
+  }
+
   return (
     <Sidebar>
       <SidebarHeader className="border-b border-sidebar-border">
@@ -145,7 +154,11 @@ export function VerifySidebar({
             <Bot className="h-4 w-4 text-white" />
           </div>
           <div className="flex flex-col min-w-0">
-            <span className="text-sm font-semibold truncate">FakeVerifier</span>
+            <img 
+              src="/Images/fakeverifier-official-logo.png" 
+              alt="FakeVerifier Logo" 
+              className="h-10 w-10 object-contain"
+            />
             <span className="text-xs text-sidebar-foreground/70 truncate">AI News Verification</span>
           </div>
         </div>
@@ -170,19 +183,7 @@ export function VerifySidebar({
         <SidebarSeparator />
 
         <SidebarGroup>
-          <div className="flex items-center justify-between">
-            <SidebarGroupLabel>Recent Verifications</SidebarGroupLabel>
-            {history.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={clearHistory}
-                className="h-6 w-6 p-0 text-sidebar-foreground/50 hover:text-sidebar-foreground flex-shrink-0"
-              >
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            )}
-          </div>
+          <SidebarGroupLabel>Recent Verifications</SidebarGroupLabel>
           <SidebarGroupContent>
             {isLoading ? (
               <div className="flex items-center justify-center py-4">
@@ -210,14 +211,24 @@ export function VerifySidebar({
                 {history.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-lg border border-sidebar-border p-3 hover:bg-sidebar-accent/50 cursor-pointer transition-colors overflow-hidden"
+                    className="group rounded-lg border border-sidebar-border p-3 hover:bg-sidebar-accent/50 cursor-pointer transition-colors overflow-hidden relative"
                     onClick={() => handleHistoryItemClick(item)}
                   >
                     <div className="flex items-start justify-between gap-2 mb-2">
                       <h4 className="text-sm font-medium leading-tight line-clamp-2 break-words min-w-0 flex-1">
                         {item.title}
                       </h4>
-                      {getVerdictIcon(item.verdict)}
+                      <div className="flex items-center gap-1">
+                        {getVerdictIcon(item.verdict)}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={(e) => handleDeleteItem(e, item.id)}
+                          className="h-6 w-6 p-0 text-sidebar-foreground/30 hover:text-red-600 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
 
                     <div className="flex items-center justify-between gap-2">

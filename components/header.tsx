@@ -36,11 +36,14 @@ export function Header() {
             isScrolled && "bg-white/80 dark:bg-slate-900/80 max-w-4xl rounded-2xl border backdrop-blur-lg lg:px-5",
           )}
         >
-          <div className="relative flex flex-wrap items-center justify-between gap-6 py-3 lg:gap-0 lg:py-4">
+          <div className="relative flex flex-wrap items-center justify-between gap-6 py-1 lg:gap-0 lg:py-2">
             <div className="flex w-full justify-between lg:w-auto">
-              <Link href="/" aria-label="home" className="flex items-center space-x-2">
-                <Shield className="h-8 w-8 text-blue-600" />
-                <span className="text-xl font-serif font-bold text-slate-800 dark:text-white">fakeverifier</span>
+              <Link href="/" aria-label="home" className="flex items-center">
+                <img 
+                  src="/Images/fakeverifier-official-logo.png" 
+                  alt="FakeVerifier Logo" 
+                  className="h-14 w-14 object-contain"
+                />
               </Link>
 
               <button

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button"
 import { ArrowRight, Shield, Zap, CheckCircle } from "lucide-react"
 import { motion } from "framer-motion"
 import Link from "next/link"
-import { DemoModal } from "./demo-modal"
+ 
 
 export function CTASection() {
   const [showDemo, setShowDemo] = useState(false);
@@ -87,15 +87,16 @@ export function CTASection() {
             </motion.div>
 
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setShowDemo(true)}
-                className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-full backdrop-blur-sm bg-transparent"
-              >
-                Watch Demo
-                <Zap className="ml-2 w-5 h-5" />
-              </Button>
+              <Link href="/about">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="border-white/30 text-white hover:bg-white/10 font-semibold px-8 py-4 text-lg rounded-full backdrop-blur-sm bg-transparent"
+                >
+                  Learn More
+                  <ArrowRight className="ml-2 w-5 h-5" />
+                </Button>
+              </Link>
             </motion.div>
           </div>
 
@@ -125,8 +126,7 @@ export function CTASection() {
       {/* Bottom gradient fade */}
       <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-white to-transparent" />
 
-      {/* Demo Modal */}
-      <DemoModal isOpen={showDemo} onClose={() => setShowDemo(false)} />
+      
     </section>
   )
 }

@@ -243,10 +243,18 @@ export async function POST(request: NextRequest) {
       console.log('NYT API error:', error);
     }
 
-    // Enhanced system prompt for comprehensive verification
-    const systemPrompt = `You are an AI assistant specialized in comprehensive news verification and content credibility assessment. You have access to real-time news data from multiple sources including the New York Times and can search for current information to verify claims.
+    // Determine if this is real-time news or older content
+    const isRealTimeNews = checkIfRealTimeNews(content, newsData, newsApiAiData, finlightData, nytData);
+    
+    // Choose the appropriate model based on content type
+    const modelToUse = isRealTimeNews ? "gpt-4o-search-preview" : "gpt-4o";
+    
+    console.log(`Using model: ${modelToUse} for ${isRealTimeNews ? 'real-time' : 'older'} news content`);
 
-IMPORTANT: You must be accurate and evidence-based in your verification. Classify content as "Real" if there is clear, verifiable evidence from reliable sources. For factual claims (like current political office holders, basic facts, etc.), be more direct. Only classify as "Questionable" when there is genuine uncertainty or controversy.
+    // Enhanced system prompt for comprehensive verification
+    const systemPrompt = `You are an AI assistant specialized in comprehensive news verification and content credibility assessment. ${isRealTimeNews ? 'You have access to real-time search capabilities and can search for current information to verify claims.' : 'You will analyze content using provided news data from multiple sources including NewsAPI, NewsAPI.ai, Finlight, and New York Times.'}
+
+IMPORTANT: You must be accurate and evidence-based in your verification. Classify content as "Real" if there is clear, verifiable evidence from reliable sources. For factual claims (like current political office holders, basic facts, etc.), be more direct. Only classify as "Questionable" when there is genuine uncertainty or controversy. Be fair and balanced - do not assume content is fake without clear evidence. When in doubt, err on the side of "Real" if there are credible sources supporting the claim.
 
 For each analysis, you must provide:
 
@@ -291,6 +299,8 @@ Analysis Guidelines:
 - FACTUAL CLAIMS: For basic factual information (current office holders, dates, locations, etc.), be confident and direct
 - Do not mark factual claims as "Questionable" unless there is genuine controversy or uncertainty
 - EXPLANATION FORMAT: Write clear, structured explanations that are easy to read. Use **bold** formatting for key terms but avoid excessive formatting. Make the explanation flow naturally and be informative.
+- NEWSAPI DATA: When NewsAPI provides relevant articles that support the claim being verified, use this as strong evidence for "Real" classification. Do not dismiss NewsAPI data without clear reason.
+- BALANCED ASSESSMENT: If multiple credible sources (including NewsAPI) support a claim, classify it as "Real" even if there are some minor uncertainties.
 
 AI-Generated Content Detection:
 - Look for repetitive language patterns
@@ -348,20 +358,20 @@ IMPORTANT: In the EXPLANATION section, make key terms bold using **term** format
         }).join('\n')}`
       : '';
 
-    const userPrompt = `Analyze and verify this ${type} content for credibility and authenticity using real-time news data from multiple sources including the New York Times. Also detect if the content appears to be AI-generated:
+    const userPrompt = `Analyze and verify this ${type} content for credibility and authenticity using ${isRealTimeNews ? 'real-time search capabilities and current news data' : 'provided news data from multiple sources including NewsAPI, NewsAPI.ai, Finlight, and New York Times'}. Also detect if the content appears to be AI-generated:
 
 "${content}"${urlAnalysis}${urlContent}
 
-Please search for current news related to this content and provide a comprehensive verification analysis following the structured format. 
+Please ${isRealTimeNews ? 'search for current news related to this content and' : 'analyze the provided news data to'} provide a comprehensive verification analysis following the structured format. 
 
-IMPORTANT: Select only the most relevant and credible sources from the provided real-time news data. Do not use generic source lists - choose sources that directly relate to the content being analyzed. Consider source reputation, recency, and relevance when selecting sources.
+IMPORTANT: ${isRealTimeNews ? 'Use your search capabilities to find the most relevant and credible sources.' : 'Select only the most relevant and credible sources from the provided news data.'} Do not use generic source lists - choose sources that directly relate to the content being analyzed. Consider source reputation, recency, and relevance when selecting sources.
 
 FORMATTING: Write clear, well-structured explanations. Use **bold** formatting for key terms like "Real", "Fake", "Questionable", etc., but do NOT wrap entire verdicts in ** symbols. Make the explanation easy to read and understand.
 
-Include real-time news sources and current context in your analysis. Cross-reference with all available news APIs and analyze for AI-generated content patterns.${newsContext}${newsApiAiContext}${finlightContext}${nytContext}${videoContext}`;
-
+Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sources and current context in your analysis. Cross-reference with all available ${isRealTimeNews ? 'search results' : 'news APIs'} and analyze for AI-generated content patterns.${isRealTimeNews ? '' : `${newsContext}${newsApiAiContext}${finlightContext}${nytContext}${videoContext}`}`;
+    
     const completion = await openai.chat.completions.create({
-      model: "gpt-4o-search-preview",
+      model: modelToUse,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
@@ -386,24 +396,59 @@ Include real-time news sources and current context in your analysis. Cross-refer
     let verdict: "real" | "likely-real" | "likely-fake" | "fake" | "questionable" | "ai-generated" = "questionable";
     const responseLower = aiResponse.toLowerCase();
     
-    if (responseLower.includes("verdict: real") || responseLower.includes("real")) {
-      verdict = "real";
-    } else if (responseLower.includes("verdict: likely real") || responseLower.includes("likely real")) {
-      verdict = "likely-real";
-    } else if (responseLower.includes("verdict: likely fake") || responseLower.includes("likely fake")) {
-      verdict = "likely-fake";
-    } else if (responseLower.includes("verdict: fake") || responseLower.includes("fake")) {
-      verdict = "fake";
-    } else if (responseLower.includes("verdict: ai-generated") || responseLower.includes("ai-generated")) {
-      verdict = "ai-generated";
-    } else if (responseLower.includes("verdict: questionable") || responseLower.includes("questionable")) {
-      verdict = "questionable";
-    }
+    // Debug logging
+    console.log('AI Response for verdict analysis:', aiResponse.substring(0, 500) + '...');
+    console.log('Response lower case:', responseLower.substring(0, 500) + '...');
     
-    // Default to questionable if no clear verdict is found
-    if (verdict === "questionable" && !responseLower.includes("questionable")) {
+    // Check for explicit verdict statements first
+    if (responseLower.includes("verdict: real")) {
+      verdict = "real";
+    } else if (responseLower.includes("verdict: likely real")) {
+      verdict = "likely-real";
+    } else if (responseLower.includes("verdict: likely fake")) {
+      verdict = "likely-fake";
+    } else if (responseLower.includes("verdict: fake")) {
+      verdict = "fake";
+    } else if (responseLower.includes("verdict: ai-generated")) {
+      verdict = "ai-generated";
+    } else if (responseLower.includes("verdict: questionable")) {
       verdict = "questionable";
-    }
+    } else {
+      // If no explicit verdict found, look for keywords in the explanation
+      // Prioritize positive classifications for real news
+      if (responseLower.includes("real") && !responseLower.includes("fake") && !responseLower.includes("questionable")) {
+        verdict = "real";
+      } else if (responseLower.includes("likely real")) {
+        verdict = "likely-real";
+      } else if (responseLower.includes("likely fake")) {
+        verdict = "likely-fake";
+      } else if (responseLower.includes("fake") && !responseLower.includes("real")) {
+        verdict = "fake";
+      } else if (responseLower.includes("ai-generated")) {
+        verdict = "ai-generated";
+      } else if (responseLower.includes("questionable")) {
+        verdict = "questionable";
+      } else {
+        // If still no clear verdict, check for positive indicators
+        const positiveIndicators = ["verified", "confirmed", "accurate", "true", "legitimate", "credible"];
+        const negativeIndicators = ["false", "misleading", "inaccurate", "unverified", "suspicious"];
+        
+        const positiveCount = positiveIndicators.filter(indicator => responseLower.includes(indicator)).length;
+        const negativeCount = negativeIndicators.filter(indicator => responseLower.includes(indicator)).length;
+        
+        if (positiveCount > negativeCount) {
+          verdict = "real";
+        } else if (negativeCount > positiveCount) {
+          verdict = "fake";
+                 } else {
+           verdict = "questionable";
+         }
+       }
+     }
+     
+     // Debug logging for final verdict
+     console.log('Final verdict determined:', verdict);
+     console.log('Confidence:', confidence);
 
     // Extract sources from the response and combine with real-time news sources
     const extractedSources = extractSources(aiResponse);
@@ -461,7 +506,8 @@ Include real-time news sources and current context in your analysis. Cross-refer
 
     return NextResponse.json({
       analysis: aiResponse,
-      model: "gpt-4o-search-preview",
+      model: modelToUse,
+      isRealTimeNews,
       timestamp: new Date().toISOString(),
       newsData: sortedSources, // Return only the most relevant sources
       videoData: videoData.sort((a, b) => (b.relevance || 0) - (a.relevance || 0)).slice(0, 3), // Return top 3 most relevant videos
@@ -916,6 +962,50 @@ function getCuratedNewsVideos(keywords: string[], content: string): any[] {
   }
   
   return curatedVideos;
+}
+
+// Helper function to check if content is real-time news
+function checkIfRealTimeNews(content: string, newsData: any[], newsApiAiData: any[], finlightData: any[], nytData: any[]): boolean {
+  // Check for real-time indicators in the content
+  const realTimeKeywords = [
+    'breaking', 'just in', 'latest', 'recently', 'today', 'yesterday', 'this week',
+    'breaking news', 'live', 'developing', 'update', 'announcement', 'statement'
+  ];
+  
+  const contentLower = content.toLowerCase();
+  const hasRealTimeKeywords = realTimeKeywords.some(keyword => contentLower.includes(keyword));
+  
+  // Check if we have recent news data (within last 24 hours)
+  const now = new Date();
+  const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+  
+  const hasRecentNewsData = [...newsData, ...newsApiAiData, ...finlightData, ...nytData].some(article => {
+    const articleDate = new Date(article.publishedAt || article.dateTime || article.published_date || article.date || now);
+    return articleDate >= oneDayAgo;
+  });
+  
+  // Check for time-sensitive content patterns
+  const timeSensitivePatterns = [
+    /\b(today|yesterday|this week|this month)\b/i,
+    /\b(breaking|live|developing|just in)\b/i,
+    /\b(announcement|statement|press release)\b/i,
+    /\b(election|vote|result|outcome)\b/i,
+    /\b(crisis|emergency|disaster)\b/i
+  ];
+  
+  const hasTimeSensitivePatterns = timeSensitivePatterns.some(pattern => pattern.test(content));
+  
+  // Determine if it's real-time news
+  const isRealTime = hasRealTimeKeywords || hasRecentNewsData || hasTimeSensitivePatterns;
+  
+  console.log(`Real-time news check:`, {
+    hasRealTimeKeywords,
+    hasRecentNewsData,
+    hasTimeSensitivePatterns,
+    isRealTime
+  });
+  
+  return isRealTime;
 }
 
 // Helper function to extract sources from AI response
