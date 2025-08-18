@@ -21,7 +21,7 @@ export const metadata: Metadata = {
   title: "FakeVerifier - AI-Powered News Credibility Verification",
   description:
     "Verify the truth in real-time with AI-driven news credibility analysis. Trusted by journalists, researchers, and informed citizens.",
-  generator: "v0.app",
+  generator: "Preetham Devulapally",
 }
 
 export default function RootLayout({
