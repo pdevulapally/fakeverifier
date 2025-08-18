@@ -21,10 +21,7 @@ import {
   User,
   Bell,
   Shield,
-  Palette,
-  Globe,
   Download,
-  Upload,
   Trash2,
   Save,
   Eye,
@@ -39,19 +36,25 @@ import {
   CreditCard,
   HelpCircle,
   LogOut,
-  AlertTriangle
+  AlertTriangle,
+  Crown,
+  Zap
 } from "lucide-react"
-import { getCurrentUser, signOutUser, onAuthStateChange, db } from "@/lib/firebase"
-import { collection, query, where, getDocs, deleteDoc, doc } from "firebase/firestore"
+import { getCurrentUser, signOutUser, onAuthStateChange, db, getUserTokenUsage, TokenUsage } from "@/lib/firebase"
+import { collection, query, where, getDocs, deleteDoc, doc, orderBy } from "firebase/firestore"
 import { deleteUser } from "firebase/auth"
 import Link from "next/link"
+import { toast } from "sonner"
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null)
+  const [tokenUsage, setTokenUsage] = useState<TokenUsage | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditingProfile, setIsEditingProfile] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
+  const [isClearingHistory, setIsClearingHistory] = useState(false)
   const [profileData, setProfileData] = useState<{
     displayName: string;
     email: string;
@@ -71,26 +74,16 @@ export default function SettingsPage() {
       lowTokens: true,
       weeklyReport: false
     },
-    appearance: {
-      theme: 'light',
-      compactMode: false,
-      showAnimations: true
-    },
     privacy: {
       shareAnalytics: true,
       allowCookies: true,
       publicProfile: false
-    },
-    verification: {
-      autoSave: true,
-      defaultLanguage: 'en',
-      maxFileSize: 10
     }
   })
 
   useEffect(() => {
     // Listen for auth state changes
-    const unsubscribe = onAuthStateChange((currentUser) => {
+    const unsubscribe = onAuthStateChange(async (currentUser) => {
       if (currentUser) {
         setUser(currentUser)
         // Initialize profile data with user data
@@ -100,6 +93,16 @@ export default function SettingsPage() {
           phoneNumber: currentUser.phoneNumber || '',
           bio: (currentUser as any).bio || ''
         })
+        
+        // Load token usage to get account type
+        try {
+          const tokenResult = await getUserTokenUsage()
+          if (tokenResult.success) {
+            setTokenUsage(tokenResult.data as TokenUsage)
+          }
+        } catch (error) {
+          console.error('Error loading token usage:', error)
+        }
       } else {
         setUser(null)
         // Redirect to login if no user
@@ -131,23 +134,100 @@ export default function SettingsPage() {
         phoneNumber: profileData.phoneNumber
       }))
       setIsEditingProfile(false)
-      // You could add a toast notification here
-      console.log('Profile updated successfully')
+      toast.success('Profile updated successfully')
     } catch (error) {
       console.error('Error updating profile:', error)
+      toast.error('Failed to update profile')
     }
   }
 
   const handleCancelEdit = () => {
     // Reset profile data to current user data
-          setProfileData((prev) => ({
-        ...prev,
-        displayName: user?.displayName || '',
-        email: user?.email || '',
-        phoneNumber: user?.phoneNumber || '',
-        bio: (user as any)?.bio || ''
-      }))
+    setProfileData((prev) => ({
+      ...prev,
+      displayName: user?.displayName || '',
+      email: user?.email || '',
+      phoneNumber: user?.phoneNumber || '',
+      bio: (user as any)?.bio || ''
+    }))
     setIsEditingProfile(false)
+  }
+
+  const handleExportData = async () => {
+    setIsExporting(true)
+    try {
+      // Get user's verification history
+      const verificationsQuery = query(
+        collection(db, 'verifications'),
+        where('userId', '==', user.uid),
+        orderBy('timestamp', 'desc')
+      )
+      const verificationsSnapshot = await getDocs(verificationsQuery)
+      const verifications = verificationsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }))
+
+      // Create export data
+      const exportData = {
+        user: {
+          displayName: user.displayName,
+          email: user.email,
+          phoneNumber: user.phoneNumber,
+          accountType: tokenUsage?.plan || 'free',
+          memberSince: user.metadata?.creationTime
+        },
+        tokenUsage: tokenUsage,
+        verifications: verifications,
+        exportDate: new Date().toISOString()
+      }
+
+      // Create and download file
+      const dataStr = JSON.stringify(exportData, null, 2)
+      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      const url = URL.createObjectURL(dataBlob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `fakeverifier-data-${user.uid}-${new Date().toISOString().split('T')[0]}.json`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(url)
+
+      toast.success('Data exported successfully')
+    } catch (error) {
+      console.error('Error exporting data:', error)
+      toast.error('Failed to export data')
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
+  const handleClearHistory = async () => {
+    if (!confirm('Are you sure you want to clear all your verification history? This action cannot be undone.')) {
+      return
+    }
+
+    setIsClearingHistory(true)
+    try {
+      // Delete all verifications for the user
+      const verificationsQuery = query(
+        collection(db, 'verifications'),
+        where('userId', '==', user.uid)
+      )
+      const verificationsSnapshot = await getDocs(verificationsQuery)
+      const verificationDeletions = verificationsSnapshot.docs.map(doc => 
+        deleteDoc(doc.ref)
+      )
+      await Promise.all(verificationDeletions)
+      
+      toast.success(`Cleared ${verificationsSnapshot.size} verification records`)
+    } catch (error) {
+      console.error('Error clearing history:', error)
+      toast.error('Failed to clear history')
+    } finally {
+      setIsClearingHistory(false)
+    }
   }
 
   const handleDeleteAccount = async () => {
@@ -165,7 +245,7 @@ export default function SettingsPage() {
       window.location.href = '/Login'
     } catch (error: any) {
       console.error('Error deleting account:', error)
-      alert(`Error deleting account: ${error.message}`)
+      toast.error(`Error deleting account: ${error.message}`)
     } finally {
       setIsDeleting(false)
       setShowDeleteDialog(false)
@@ -235,6 +315,28 @@ export default function SettingsPage() {
       })
     } catch (error) {
       return 'Unknown'
+    }
+  }
+
+  const getAccountTypeBadge = (plan: string) => {
+    switch (plan) {
+      case 'pro':
+        return <Badge className="bg-blue-100 text-blue-800 text-xs">PRO</Badge>
+      case 'enterprise':
+        return <Badge className="bg-purple-100 text-purple-800 text-xs">ENTERPRISE</Badge>
+      default:
+        return <Badge className="bg-gray-100 text-gray-800 text-xs">FREE</Badge>
+    }
+  }
+
+  const getAccountTypeIcon = (plan: string) => {
+    switch (plan) {
+      case 'pro':
+        return <Crown className="w-4 h-4 text-blue-600" />
+      case 'enterprise':
+        return <Zap className="w-4 h-4 text-purple-600" />
+      default:
+        return <User className="w-4 h-4 text-gray-600" />
     }
   }
 
@@ -326,9 +428,12 @@ export default function SettingsPage() {
                     )}
                   </div>
                   <div className="flex-1">
-                    <h3 className="font-semibold text-lg">
-                      {user?.displayName || 'User'}
-                    </h3>
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-lg">
+                        {user?.displayName || 'User'}
+                      </h3>
+                      {tokenUsage && getAccountTypeBadge(tokenUsage.plan)}
+                    </div>
                     <p className="text-gray-600">{user?.email}</p>
                     {user?.phoneNumber && (
                       <p className="text-sm text-gray-500">{user.phoneNumber}</p>
@@ -359,12 +464,29 @@ export default function SettingsPage() {
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">Account Type</Label>
-                    <p className="text-gray-900">
-                      {user?.providerData?.[0]?.providerId === 'google.com' ? 'Google' : 
-                       user?.providerData?.[0]?.providerId === 'facebook.com' ? 'Facebook' : 
-                       'Email'}
-                    </p>
+                    <div className="flex items-center gap-2">
+                      {tokenUsage && getAccountTypeIcon(tokenUsage.plan)}
+                      <p className="text-gray-900 capitalize">
+                        {tokenUsage?.plan || 'Free'} Plan
+                      </p>
+                    </div>
                   </div>
+                  {tokenUsage && (
+                    <>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Token Usage</Label>
+                        <p className="text-gray-900">{tokenUsage.used} / {tokenUsage.total} tokens</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-gray-700">Login Provider</Label>
+                        <p className="text-gray-900">
+                          {user?.providerData?.[0]?.providerId === 'google.com' ? 'Google' : 
+                           user?.providerData?.[0]?.providerId === 'facebook.com' ? 'Facebook' : 
+                           'Email'}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
             ) : (
@@ -497,51 +619,6 @@ export default function SettingsPage() {
             </div>
           </Card>
 
-          {/* Appearance */}
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <Palette className="w-5 h-5 text-purple-600" />
-              <h2 className="text-lg font-semibold">Appearance</h2>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="theme">Theme</Label>
-                <select
-                  id="theme"
-                  value={settings.appearance.theme}
-                  onChange={(e) => updateSetting('appearance', 'theme', e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="auto">Auto</option>
-                </select>
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="compact-mode">Compact Mode</Label>
-                  <p className="text-sm text-gray-500">Reduce spacing for more content</p>
-                </div>
-                <Switch
-                  id="compact-mode"
-                  checked={settings.appearance.compactMode}
-                  onCheckedChange={(checked) => updateSetting('appearance', 'compactMode', checked)}
-                />
-              </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="animations">Show Animations</Label>
-                  <p className="text-sm text-gray-500">Enable smooth transitions and animations</p>
-                </div>
-                <Switch
-                  id="animations"
-                  checked={settings.appearance.showAnimations}
-                  onCheckedChange={(checked) => updateSetting('appearance', 'showAnimations', checked)}
-                />
-              </div>
-            </div>
-          </Card>
-
           {/* Privacy & Security */}
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -585,53 +662,6 @@ export default function SettingsPage() {
             </div>
           </Card>
 
-          {/* Verification Settings */}
-          <Card className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <SettingsIcon className="w-5 h-5 text-orange-600" />
-              <h2 className="text-lg font-semibold">Verification Settings</h2>
-            </div>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <Label htmlFor="auto-save">Auto Save</Label>
-                  <p className="text-sm text-gray-500">Automatically save verification results</p>
-                </div>
-                <Switch
-                  id="auto-save"
-                  checked={settings.verification.autoSave}
-                  onCheckedChange={(checked) => updateSetting('verification', 'autoSave', checked)}
-                />
-              </div>
-              <div>
-                <Label htmlFor="language">Default Language</Label>
-                <select
-                  id="language"
-                  value={settings.verification.defaultLanguage}
-                  onChange={(e) => updateSetting('verification', 'defaultLanguage', e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="en">English</option>
-                  <option value="es">Spanish</option>
-                  <option value="fr">French</option>
-                  <option value="de">German</option>
-                </select>
-              </div>
-              <div>
-                <Label htmlFor="max-file-size">Max File Size (MB)</Label>
-                <Input
-                  id="max-file-size"
-                  type="number"
-                  value={settings.verification.maxFileSize}
-                  onChange={(e) => updateSetting('verification', 'maxFileSize', parseInt(e.target.value))}
-                  className="mt-1"
-                  min="1"
-                  max="50"
-                />
-              </div>
-            </div>
-          </Card>
-
           {/* Data Management */}
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-4">
@@ -640,19 +670,30 @@ export default function SettingsPage() {
             </div>
             <div className="space-y-4">
               <div className="flex gap-2">
-                <Button variant="outline" size="sm">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleExportData}
+                  disabled={isExporting}
+                >
                   <Download className="w-4 h-4 mr-2" />
-                  Export Data
+                  {isExporting ? 'Exporting...' : 'Export Data'}
                 </Button>
-                <Button variant="outline" size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import Data
-                </Button>
-                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="text-red-600 hover:text-red-700"
+                  onClick={handleClearHistory}
+                  disabled={isClearingHistory}
+                >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Clear History
+                  {isClearingHistory ? 'Clearing...' : 'Clear History'}
                 </Button>
               </div>
+              <p className="text-sm text-gray-500">
+                Export your data as JSON or clear your verification history. 
+                Clearing history will permanently delete all your verification records.
+              </p>
             </div>
           </Card>
 
