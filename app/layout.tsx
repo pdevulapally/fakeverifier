@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Work_Sans, Open_Sans } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/lib/auth-context"
+import { CookieBanner } from "@/components/cookie-banner"
 
 const workSans = Work_Sans({
   subsets: ["latin"],
@@ -33,6 +34,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           {children}
+          <CookieBanner />
         </AuthProvider>
       </body>
     </html>

@@ -144,12 +144,12 @@ export default function SettingsPage() {
   const handleCancelEdit = () => {
     // Reset profile data to current user data
     setProfileData((prev: typeof profileData) => ({
-      ...prev,
-      displayName: user?.displayName || '',
-      email: user?.email || '',
-      phoneNumber: user?.phoneNumber || '',
-      bio: (user as any)?.bio || ''
-    }))
+        ...prev,
+        displayName: user?.displayName || '',
+        email: user?.email || '',
+        phoneNumber: user?.phoneNumber || '',
+        bio: (user as any)?.bio || ''
+      }))
     setIsEditingProfile(false)
   }
 
@@ -454,9 +454,9 @@ export default function SettingsPage() {
                   </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-lg">
-                        {user?.displayName || 'User'}
-                      </h3>
+                    <h3 className="font-semibold text-lg">
+                      {user?.displayName || 'User'}
+                    </h3>
                       {tokenUsage && getAccountTypeBadge(tokenUsage.plan)}
                     </div>
                     <p className="text-gray-600">{user?.email}</p>
@@ -504,12 +504,12 @@ export default function SettingsPage() {
                       </div>
                       <div>
                         <Label className="text-sm font-medium text-gray-700">Login Provider</Label>
-                        <p className="text-gray-900">
-                          {user?.providerData?.[0]?.providerId === 'google.com' ? 'Google' : 
-                           user?.providerData?.[0]?.providerId === 'facebook.com' ? 'Facebook' : 
-                           'Email'}
-                        </p>
-                      </div>
+                    <p className="text-gray-900">
+                      {user?.providerData?.[0]?.providerId === 'google.com' ? 'Google' : 
+                       user?.providerData?.[0]?.providerId === 'facebook.com' ? 'Facebook' : 
+                       'Email'}
+                    </p>
+                  </div>
                     </>
                   )}
                 </div>
