@@ -127,7 +127,7 @@ export default function SettingsPage() {
     try {
       // Here you would typically update the user profile in Firebase
       // For now, we'll just update the local state
-      setUser(prev => ({
+      setUser((prev: any) => ({
         ...prev,
         displayName: profileData.displayName,
         email: profileData.email,
@@ -143,7 +143,7 @@ export default function SettingsPage() {
 
   const handleCancelEdit = () => {
     // Reset profile data to current user data
-    setProfileData((prev) => ({
+    setProfileData((prev: typeof profileData) => ({
       ...prev,
       displayName: user?.displayName || '',
       email: user?.email || '',
@@ -166,35 +166,60 @@ export default function SettingsPage() {
       const verifications = verificationsSnapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }))
+      })) as Array<{
+        id: string;
+        title?: string;
+        content?: string;
+        verdict?: string;
+        score?: number;
+        timestamp?: any;
+      }>
 
-      // Create export data
-      const exportData = {
-        user: {
-          displayName: user.displayName,
-          email: user.email,
-          phoneNumber: user.phoneNumber,
-          accountType: tokenUsage?.plan || 'free',
-          memberSince: user.metadata?.creationTime
-        },
-        tokenUsage: tokenUsage,
-        verifications: verifications,
-        exportDate: new Date().toISOString()
+      // Create CSV content
+      let csvContent = ''
+
+      // Add user information section
+      csvContent += 'USER INFORMATION\n'
+      csvContent += 'Display Name,Email,Phone Number,Account Type,Member Since\n'
+      csvContent += `"${user.displayName || ''}","${user.email || ''}","${user.phoneNumber || ''}","${tokenUsage?.plan || 'free'}","${formatDate(user.metadata?.creationTime) || ''}"\n\n`
+
+      // Add token usage section
+      csvContent += 'TOKEN USAGE\n'
+      csvContent += 'Used Tokens,Total Tokens,Plan,Reset Date\n'
+      if (tokenUsage) {
+        csvContent += `${tokenUsage.used},${tokenUsage.total},"${tokenUsage.plan}","${formatDate(tokenUsage.resetDate.toString())}"\n\n`
       }
 
-      // Create and download file
-      const dataStr = JSON.stringify(exportData, null, 2)
-      const dataBlob = new Blob([dataStr], { type: 'application/json' })
+      // Add verification history section
+      csvContent += 'VERIFICATION HISTORY\n'
+      csvContent += 'Title,Content,Verdict,Score,Timestamp\n'
+      
+      verifications.forEach(verification => {
+        const title = (verification.title || '').replace(/"/g, '""') // Escape quotes
+        const content = (verification.content || '').replace(/"/g, '""').substring(0, 100) + '...' // Truncate content
+        const verdict = verification.verdict || ''
+        const score = verification.score || 0
+        const timestamp = formatDate(verification.timestamp?.toString() || '')
+        
+        csvContent += `"${title}","${content}","${verdict}",${score},"${timestamp}"\n`
+      })
+
+      // Add export metadata
+      csvContent += `\nExport Date: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString()}\n`
+      csvContent += `Total Verifications: ${verifications.length}\n`
+
+      // Create and download CSV file
+      const dataBlob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
       const url = URL.createObjectURL(dataBlob)
       const link = document.createElement('a')
       link.href = url
-      link.download = `fakeverifier-data-${user.uid}-${new Date().toISOString().split('T')[0]}.json`
+      link.download = `fakeverifier-data-${user.displayName || user.email}-${new Date().toISOString().split('T')[0]}.csv`
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
       URL.revokeObjectURL(url)
 
-      toast.success('Data exported successfully')
+      toast.success(`Data exported successfully! ${verifications.length} verifications included.`)
     } catch (error) {
       console.error('Error exporting data:', error)
       toast.error('Failed to export data')
