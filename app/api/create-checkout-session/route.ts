@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
         monthly: 4999, // $49.99 in cents
         yearly: 3999,  // $39.99 in cents
       },
-    };
+    } as const;
 
     const amount = pricing[tierId as keyof typeof pricing][paymentFrequency as keyof typeof pricing.pro];
     const interval = paymentFrequency === 'yearly' ? 'year' : 'month';
@@ -224,63 +224,100 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate and build success/cancel URLs
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      console.error('NEXT_PUBLIC_BASE_URL is not set');
+      return NextResponse.json(
+        { error: 'App base URL is not configured (NEXT_PUBLIC_BASE_URL).' },
+        { status: 500 }
+      );
+    }
+
+    let successUrl: string;
+    let cancelUrl: string;
+    try {
+      const base = new URL(baseUrl);
+      const success = new URL('/verify', base);
+      success.search = 'success=true&session_id={CHECKOUT_SESSION_ID}';
+      const cancel = new URL('/pricing', base);
+      cancel.search = 'canceled=true';
+      successUrl = success.toString();
+      cancelUrl = cancel.toString();
+    } catch (e) {
+      console.error('Invalid NEXT_PUBLIC_BASE_URL value:', baseUrl);
+      return NextResponse.json(
+        { error: 'App base URL is invalid. Please set NEXT_PUBLIC_BASE_URL to a valid URL (e.g., http://localhost:3000).' },
+        { status: 500 }
+      );
+    }
+
     // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [
-        {
-          price_data: {
-            currency: 'usd',
-            product_data: {
-              name: `FakeVerifier ${tierId.charAt(0).toUpperCase() + tierId.slice(1)} Plan`,
-              description: `${tierId === 'pro' ? '500' : '5000'} verification tokens per month`,
-              images: ['https://fakeverifier.co.uk/fakeverifier-official-logo.png'], // FakeVerifier logo
+    try {
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price_data: {
+              currency: 'usd',
+              product_data: {
+                name: `FakeVerifier ${tierId.charAt(0).toUpperCase() + tierId.slice(1)} Plan`,
+                description: `${tierId === 'pro' ? '500' : '5000'} verification tokens per month`,
+                images: ['https://fakeverifier.co.uk/fakeverifier-official-logo.png'], // FakeVerifier logo
+              },
+              unit_amount: amount,
+              recurring: {
+                interval: interval as 'month' | 'year',
+              },
             },
-            unit_amount: amount,
-            recurring: {
-              interval: interval as 'month' | 'year',
-            },
+            quantity: 1,
           },
-          quantity: 1,
-        },
-      ],
-      mode: 'subscription',
-      success_url: `${process.env.NEXT_PUBLIC_BASE_URL}/verify?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_BASE_URL}/pricing?canceled=true`,
-      customer_email: userEmail,
-      metadata: {
-        userId,
-        tierId,
-        paymentFrequency,
-        clientIP,
-        userAgent: userAgent.substring(0, 200), // Limit length
-      },
-      billing_address_collection: 'required',
-      allow_promotion_codes: true,
-      subscription_data: {
+        ],
+        mode: 'subscription',
+        success_url: successUrl,
+        cancel_url: cancelUrl,
+        customer_email: userEmail,
         metadata: {
           userId,
           tierId,
           paymentFrequency,
+          clientIP,
+          userAgent: userAgent.substring(0, 200), // Limit length
         },
-      },
-      // Additional security measures
-      payment_intent_data: {
-        metadata: {
-          userId,
-          tierId,
-          paymentFrequency,
+        billing_address_collection: 'required',
+        allow_promotion_codes: true,
+        subscription_data: {
+          metadata: {
+            userId,
+            tierId,
+            paymentFrequency,
+          },
         },
-      },
-    });
+        // Removed payment_intent_data: not allowed with mode=subscription
+      });
 
-    // Log the session creation (in production, use proper logging)
-    console.log(`Checkout session created for user ${userId}, tier ${tierId}, frequency ${paymentFrequency}`);
+      // Log the session creation (in production, use proper logging)
+      console.log(`Checkout session created for user ${userId}, tier ${tierId}, frequency ${paymentFrequency}`);
 
-    return NextResponse.json({
-      sessionId: session.id,
-      url: session.url,
-    });
+      return NextResponse.json({
+        sessionId: session.id,
+        url: session.url,
+      });
+    } catch (err: any) {
+      console.error('Stripe checkout error (session.create):', {
+        message: err?.message,
+        type: err?.type,
+        code: err?.code,
+        raw: err?.raw,
+      });
+      const safeMsg = process.env.NODE_ENV !== 'production' && err?.message
+        ? err.message
+        : 'Failed to create checkout session';
+      return NextResponse.json(
+        { error: safeMsg },
+        { status: 500 }
+      );
+    }
 
   } catch (error: any) {
     console.error('Stripe checkout error:', error);
