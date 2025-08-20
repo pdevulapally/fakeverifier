@@ -378,13 +378,20 @@ export const getUserTokenUsage = async () => {
     }
 
     const doc = querySnapshot.docs[0]
-    const data = doc.data() as TokenUsage
+    const data = doc.data()
+    
+    // Convert Firestore Timestamps to JavaScript Date objects
+    const tokenUsage: TokenUsage = {
+      ...data,
+      resetDate: data.resetDate?.toDate ? data.resetDate.toDate() : new Date(data.resetDate),
+      lastUpdated: data.lastUpdated?.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated)
+    } as TokenUsage
     
     // Check if reset date has passed
-    if (new Date(data.resetDate) < new Date()) {
+    if (tokenUsage.resetDate < new Date()) {
       // Reset tokens for new month
       const updatedUsage = {
-        ...data,
+        ...tokenUsage,
         used: 0,
         resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         lastUpdated: new Date()
@@ -394,7 +401,7 @@ export const getUserTokenUsage = async () => {
       return { success: true, data: { id: doc.id, ...updatedUsage } }
     }
 
-    return { success: true, data: { id: doc.id, ...data } }
+    return { success: true, data: { id: doc.id, ...tokenUsage } }
   } catch (error: any) {
     console.error('Error getting user token usage:', error)
     return { success: false, error: error.message }
@@ -437,7 +444,7 @@ export const consumeTokens = async (amount: number = 1) => {
   }
 }
 
-export const upgradeUserPlan = async (plan: "pro" | "enterprise") => {
+export const upgradeUserPlan = async (plan: "free" | "pro" | "enterprise") => {
   try {
     const user = getCurrentUser()
     if (!user) {
@@ -450,7 +457,7 @@ export const upgradeUserPlan = async (plan: "pro" | "enterprise") => {
     }
 
     const usage = usageResult.data as TokenUsage & { id: string }
-    const newTotal = plan === "pro" ? 500 : 5000
+    const newTotal = plan === "free" ? 50 : plan === "pro" ? 500 : 5000
 
     const updatedUsage = {
       ...usage,
@@ -463,6 +470,112 @@ export const upgradeUserPlan = async (plan: "pro" | "enterprise") => {
     return { success: true, data: updatedUsage }
   } catch (error: any) {
     console.error('Error upgrading user plan:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const downgradeUserPlan = async (targetPlan: "free" | "pro" = "free") => {
+  try {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    const usageResult = await getUserTokenUsage()
+    if (!usageResult.success) {
+      throw new Error(usageResult.error)
+    }
+
+    const usage = usageResult.data as TokenUsage & { id: string }
+    
+    // Only allow downgrade if user is currently on a higher plan
+    if (usage.plan === 'free') {
+      throw new Error('User is already on free plan')
+    }
+    
+    if (usage.plan === 'pro' && targetPlan === 'pro') {
+      throw new Error('User is already on pro plan')
+    }
+
+    const newTotal = targetPlan === "pro" ? 500 : 50
+
+    const updatedUsage = {
+      ...usage,
+      plan: targetPlan,
+      total: newTotal,
+      lastUpdated: new Date()
+    }
+
+    await updateDoc(doc(db, 'tokenUsage', usage.id), updatedUsage)
+    return { success: true, data: updatedUsage }
+  } catch (error: any) {
+    console.error('Error downgrading user plan:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const getUserStripeSubscription = async () => {
+  try {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Get the user's ID token for server-side verification
+    const idToken = await user.getIdToken()
+    
+    const response = await fetch('/api/get-subscription', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${idToken}`,
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch subscription')
+    }
+
+    const data = await response.json()
+    return { success: true, data }
+  } catch (error: any) {
+    console.error('Error getting user subscription:', error)
+    return { success: false, error: error.message }
+  }
+}
+
+export const changeSubscription = async (targetPlan: "free" | "pro" | "enterprise", paymentFrequency: "monthly" | "yearly" = "monthly") => {
+  try {
+    const user = getCurrentUser()
+    if (!user) {
+      throw new Error('User not authenticated')
+    }
+
+    // Get the user's ID token for server-side verification
+    const idToken = await user.getIdToken()
+    
+    const response = await fetch('/api/change-subscription', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${idToken}`,
+      },
+      body: JSON.stringify({
+        targetPlan,
+        paymentFrequency,
+        userId: user.uid,
+        userEmail: user.email,
+      }),
+    })
+
+    if (!response.ok) {
+      const errorText = await response.text()
+      throw new Error(errorText || 'Failed to change subscription')
+    }
+
+    const data = await response.json()
+    return { success: true, data }
+  } catch (error: any) {
+    console.error('Error changing subscription:', error)
     return { success: false, error: error.message }
   }
 }

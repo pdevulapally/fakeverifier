@@ -8,7 +8,15 @@ import { Card } from '@/components/ui/card';
 import { BadgeCheck, Shield, Zap, Crown, Bot, Globe, Clock, Sparkles, Mail, Phone } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { getCurrentUser, onAuthStateChange } from '@/lib/firebase';
+import { getCurrentUser, onAuthStateChange, getUserTokenUsage, changeSubscription, getUserStripeSubscription } from '@/lib/firebase';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const PAYMENT_FREQUENCIES: ('monthly' | 'yearly')[] = ['monthly', 'yearly'];
 
@@ -156,12 +164,16 @@ const PricingCard = ({
   onSelectPlan,
   isLoading,
   authLoading,
+  currentUserPlan,
+  onDowngrade,
 }: {
   tier: (typeof TIERS)[0];
   paymentFrequency: keyof typeof tier.price;
   onSelectPlan: (tierId: string) => void;
   isLoading: boolean;
   authLoading: boolean;
+  currentUserPlan: string;
+  onDowngrade: (targetPlan: string) => void;
 }) => {
   const price = tier.price[paymentFrequency];
   const isHighlighted = tier.highlighted;
@@ -196,7 +208,18 @@ const PricingCard = ({
               {tier.name}
             </h2>
             <div className="flex flex-wrap gap-2">
-              {isPopular && (
+              {currentUserPlan === tier.id && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  transition={{ delay: 0.1, type: "spring" }}
+                >
+                  <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 px-3 py-1 text-white text-xs font-bold shadow-lg">
+                    ✓ Current Plan
+                  </Badge>
+                </motion.div>
+              )}
+              {isPopular && currentUserPlan !== tier.id && (
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -207,7 +230,7 @@ const PricingCard = ({
                   </Badge>
                 </motion.div>
               )}
-              {tier.id === 'free' && (
+              {tier.id === 'free' && currentUserPlan !== tier.id && (
                 <Badge className="bg-gradient-to-r from-green-500 to-emerald-500 px-3 py-1 text-white text-xs font-bold shadow-lg">
                   Free
                 </Badge>
@@ -279,42 +302,89 @@ const PricingCard = ({
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
             >
-                             <Button
-                 onClick={() => onSelectPlan(tier.id)}
-                 disabled={isLoading || authLoading || tier.id === 'free'}
-                className={cn(
-                  'h-12 w-full rounded-xl font-bold text-base transition-all duration-200 shadow-lg',
-                  isHighlighted 
-                    ? 'bg-white text-blue-600 hover:bg-gray-50 hover:shadow-white/25' 
-                    : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/25',
-                  tier.id === 'free' && 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-400 cursor-not-allowed hover:from-gray-100 hover:to-gray-200'
-                )}
-              >
-                                 {isLoading ? (
-                   <div className="flex items-center gap-2">
-                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                     <span>Processing...</span>
-                   </div>
-                 ) : authLoading ? (
-                   <div className="flex items-center gap-2">
-                     <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                     <span>Loading...</span>
-                   </div>
-                 ) : (
-                  <span className="flex items-center gap-2">
-                    {tier.cta}
-                    {tier.id !== 'free' && (
-                      <motion.div
-                        initial={{ x: 0 }}
-                        whileHover={{ x: 3 }}
-                        transition={{ type: "spring", stiffness: 300 }}
-                      >
-                        →
-                      </motion.div>
+              {(() => {
+                // Determine button text and action based on current plan
+                let buttonText = tier.cta;
+                let buttonAction = () => onSelectPlan(tier.id);
+                let isDisabled = isLoading || authLoading;
+                let buttonVariant = 'default';
+
+                if (currentUserPlan === tier.id) {
+                  // User is on this plan
+                  if (tier.id === 'free') {
+                    buttonText = 'Current Plan';
+                    buttonAction = () => toast.info('You are already on the Free plan!');
+                    isDisabled = true;
+                    buttonVariant = 'secondary';
+                  } else {
+                    buttonText = 'Current Plan';
+                    buttonAction = () => toast.info(`You are already on the ${tier.name} plan!`);
+                    isDisabled = true;
+                    buttonVariant = 'secondary';
+                  }
+                } else if (currentUserPlan === 'pro' && tier.id === 'free') {
+                  // User is on Pro, showing Free tier - show downgrade button
+                  buttonText = 'Downgrade to Free';
+                  buttonAction = () => onDowngrade('free');
+                  isDisabled = isLoading || authLoading;
+                  buttonVariant = 'outline';
+                } else if (currentUserPlan === 'enterprise' && tier.id === 'free') {
+                  // User is on Enterprise, showing Free tier - show downgrade button
+                  buttonText = 'Downgrade to Free';
+                  buttonAction = () => onDowngrade('free');
+                  isDisabled = isLoading || authLoading;
+                  buttonVariant = 'outline';
+                } else if (currentUserPlan === 'enterprise' && tier.id === 'pro') {
+                  // User is on Enterprise, showing Pro tier - show downgrade button
+                  buttonText = 'Downgrade to Pro';
+                  buttonAction = () => onDowngrade('pro');
+                  isDisabled = isLoading || authLoading;
+                  buttonVariant = 'outline';
+                }
+
+                return (
+                  <Button
+                    onClick={buttonAction}
+                    disabled={isDisabled}
+                    variant={buttonVariant as any}
+                    className={cn(
+                      'h-12 w-full rounded-xl font-bold text-base transition-all duration-200 shadow-lg',
+                      buttonVariant === 'default' && (
+                        isHighlighted 
+                          ? 'bg-white text-blue-600 hover:bg-gray-50 hover:shadow-white/25' 
+                          : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-blue-500/25'
+                      ),
+                      buttonVariant === 'secondary' && 'bg-gradient-to-r from-gray-100 to-gray-200 text-gray-400 cursor-not-allowed hover:from-gray-100 hover:to-gray-200',
+                      buttonVariant === 'outline' && 'border-2 border-red-500 text-red-600 hover:bg-red-50 hover:border-red-600'
                     )}
-                  </span>
-                )}
-              </Button>
+                  >
+                    {isLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <span>Processing...</span>
+                      </div>
+                    ) : authLoading ? (
+                      <div className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                        <span>Loading...</span>
+                      </div>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        {buttonText}
+                        {buttonVariant === 'default' && tier.id !== 'free' && (
+                          <motion.div
+                            initial={{ x: 0 }}
+                            whileHover={{ x: 3 }}
+                            transition={{ type: "spring", stiffness: 300 }}
+                          >
+                            →
+                          </motion.div>
+                        )}
+                      </span>
+                    )}
+                  </Button>
+                );
+              })()}
             </motion.div>
           </div>
         </div>
@@ -328,6 +398,11 @@ export default function PricingPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [authLoading, setAuthLoading] = useState(true);
+  const [currentUserPlan, setCurrentUserPlan] = useState<string>('free');
+  const [showDowngradeDialog, setShowDowngradeDialog] = useState(false);
+  const [downgradeLoading, setDowngradeLoading] = useState(false);
+  const [downgradeTarget, setDowngradeTarget] = useState<string>('free');
+  const [userSubscription, setUserSubscription] = useState<any>(null);
 
   useEffect(() => {
     console.log('Pricing page: Setting up auth listener');
@@ -338,12 +413,18 @@ export default function PricingPage() {
     
     if (currentUser) {
       setUser(currentUser);
+      loadUserPlan();
     }
     
     // Also listen for auth state changes
     const unsubscribe = onAuthStateChange((user) => {
       console.log('Pricing page: Auth state changed:', user ? user.uid : 'null');
       setUser(user);
+      if (user) {
+        loadUserPlan();
+      } else {
+        setCurrentUserPlan('free');
+      }
       setAuthLoading(false);
     });
     
@@ -359,6 +440,60 @@ export default function PricingPage() {
     
     return unsubscribe;
   }, []);
+
+  const loadUserPlan = async () => {
+    try {
+      const result = await getUserTokenUsage();
+      if (result.success) {
+        const data = result.data as any;
+        setCurrentUserPlan(data.plan || 'free');
+
+        // Also load Stripe subscription if user is on a paid plan
+        if (data.plan === 'pro' || data.plan === 'enterprise') {
+          const subscriptionResult = await getUserStripeSubscription();
+          if (subscriptionResult.success) {
+            setUserSubscription(subscriptionResult.data);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error loading user plan:', error);
+      setCurrentUserPlan('free');
+    }
+  };
+
+  const handleDowngrade = (targetPlan: string) => {
+    setDowngradeTarget(targetPlan);
+    setShowDowngradeDialog(true);
+  };
+
+  const confirmDowngrade = async () => {
+    setDowngradeLoading(true);
+    try {
+      const result = await changeSubscription(downgradeTarget as "free" | "pro" | "enterprise", selectedPaymentFreq);
+      if (result.success) {
+        const planName = downgradeTarget.charAt(0).toUpperCase() + downgradeTarget.slice(1);
+        
+        if (downgradeTarget === 'free') {
+          toast.success(`Successfully downgraded to Free plan! Your subscription will be cancelled at the end of the current billing period.`);
+        } else {
+          toast.success(`Successfully changed to ${planName} plan!`);
+        }
+        
+        setCurrentUserPlan(downgradeTarget);
+        setShowDowngradeDialog(false);
+        
+        // Reload user plan to get updated subscription info
+        await loadUserPlan();
+      } else {
+        toast.error(result.error || 'Failed to change plan');
+      }
+    } catch (error: any) {
+      toast.error('Failed to change plan: ' + error.message);
+    } finally {
+      setDowngradeLoading(false);
+    }
+  };
 
   const handleSelectPlan = async (tierId: string) => {
     if (tierId === 'free') {
@@ -485,6 +620,13 @@ export default function PricingPage() {
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
               Unlock the full power of AI-powered news verification. Get more tokens, faster analysis, and advanced features.
             </p>
+            {user && !authLoading && (
+              <div className="flex items-center justify-center gap-2">
+                <Badge className="bg-gradient-to-r from-blue-500 to-indigo-500 px-4 py-2 text-white font-semibold">
+                  Current Plan: {currentUserPlan.charAt(0).toUpperCase() + currentUserPlan.slice(1)}
+                </Badge>
+              </div>
+            )}
           </div>
 
           {/* Security Badge */}
@@ -512,14 +654,16 @@ export default function PricingPage() {
         {/* Pricing Cards */}
         <div className="grid w-full max-w-7xl grid-cols-1 gap-6 sm:gap-8 lg:grid-cols-3 lg:items-stretch">
           {TIERS.map((tier, i) => (
-                         <PricingCard
-               key={i}
-               tier={tier}
-               paymentFrequency={selectedPaymentFreq}
-               onSelectPlan={handleSelectPlan}
-               isLoading={isLoading}
-               authLoading={authLoading}
-             />
+            <PricingCard
+              key={i}
+              tier={tier}
+              paymentFrequency={selectedPaymentFreq}
+              onSelectPlan={handleSelectPlan}
+              isLoading={isLoading}
+              authLoading={authLoading}
+              currentUserPlan={currentUserPlan}
+              onDowngrade={handleDowngrade}
+            />
           ))}
         </div>
 
@@ -663,7 +807,80 @@ export default function PricingPage() {
             </div>
           </Card>
         </motion.div>
-            </section>
+
+        {/* Downgrade Confirmation Dialog */}
+        <Dialog open={showDowngradeDialog} onOpenChange={setShowDowngradeDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>
+                {downgradeTarget === 'free' ? 'Confirm Plan Downgrade' : 'Confirm Plan Change'}
+              </DialogTitle>
+              <DialogDescription>
+                Are you sure you want to {downgradeTarget === 'free' ? 'downgrade' : 'change'} to the {downgradeTarget.charAt(0).toUpperCase() + downgradeTarget.slice(1)} plan? This will:
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 py-4">
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-sm">Reduce your monthly tokens from {currentUserPlan === 'pro' ? '500' : '5000'} to {downgradeTarget === 'pro' ? '500' : '50'}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-sm">
+                    {downgradeTarget === 'free' 
+                      ? 'Remove access to advanced features and priority support'
+                      : 'Remove access to enterprise features and dedicated support'
+                    }
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-sm">
+                    {downgradeTarget === 'free' 
+                      ? 'Switch to standard response times'
+                      : 'Switch to faster response times (but not instant)'
+                    }
+                  </span>
+                </div>
+                {downgradeTarget === 'free' && userSubscription?.subscription && (
+                  <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                    <p className="text-sm text-blue-800">
+                      <strong>Billing:</strong> Your subscription will be cancelled at the end of the current billing period ({new Date(userSubscription.subscription.current_period_end * 1000).toLocaleDateString()}). You'll continue to have access to your current plan features until then.
+                    </p>
+                  </div>
+                )}
+                <div className="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                  <p className="text-sm text-yellow-800">
+                    <strong>Note:</strong> You can upgrade again at any time from the pricing page.
+                  </p>
+                </div>
+              </div>
+            <DialogFooter className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowDowngradeDialog(false)}
+                disabled={downgradeLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={confirmDowngrade}
+                disabled={downgradeLoading}
+              >
+                {downgradeLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    <span>Downgrading...</span>
+                  </div>
+                ) : (
+                  'Confirm Downgrade'
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </section>
     </div>
   );
  }

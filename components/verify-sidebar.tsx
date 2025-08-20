@@ -13,6 +13,7 @@ import {
   XCircle,
   Plus,
   Trash2,
+  CreditCard,
 } from "lucide-react"
 import {
   Sidebar,
@@ -29,6 +30,7 @@ import {
 } from "@/components/ui/sidebar"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import Link from "next/link"
 
 interface VerificationHistory {
   id: string
@@ -254,15 +256,27 @@ export function VerifySidebar({
           <SidebarGroupContent>
             <SidebarMenu>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <History className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">Full History</span>
+                <SidebarMenuButton asChild>
+                  <Link href="/usage">
+                    <History className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">Full History</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton>
-                  <Settings className="w-4 h-4 flex-shrink-0" />
-                  <span className="truncate">Settings</span>
+                <SidebarMenuButton asChild>
+                  <Link href="/billing">
+                    <CreditCard className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">Billing</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild>
+                  <Link href="/settings">
+                    <Settings className="w-4 h-4 flex-shrink-0" />
+                    <span className="truncate">Settings</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>

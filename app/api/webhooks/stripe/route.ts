@@ -1,11 +1,51 @@
 import { NextRequest, NextResponse } from 'next/server';
 import Stripe from 'stripe';
-import { upgradeUserPlan } from '@/lib/firebase';
-import { adminAuth } from '@/lib/firebase-admin';
+import { adminAuth, adminDb } from '@/lib/firebase-admin';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: '2025-03-31.basil',
+  apiVersion: '2023-10-16',
 });
+
+// Server-side function to update user plan
+async function updateUserPlanServerSide(userId: string, plan: "free" | "pro" | "enterprise") {
+  try {
+    // Query the user's token usage document
+    const tokenUsageRef = adminDb.collection('tokenUsage');
+    const query = tokenUsageRef.where('userId', '==', userId).limit(1);
+    const querySnapshot = await query.get();
+    
+    if (querySnapshot.empty) {
+      // Create new token usage document if it doesn't exist
+      const newTotal = plan === "free" ? 50 : plan === "pro" ? 500 : 5000;
+      const defaultUsage = {
+        userId: userId,
+        used: 0,
+        total: newTotal,
+        resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        plan: plan,
+        lastUpdated: new Date()
+      };
+      
+      await tokenUsageRef.add(defaultUsage);
+      return { success: true, data: defaultUsage };
+    }
+
+    const doc = querySnapshot.docs[0];
+    const newTotal = plan === "free" ? 50 : plan === "pro" ? 500 : 5000;
+    
+    const updatedUsage = {
+      plan,
+      total: newTotal,
+      lastUpdated: new Date()
+    };
+
+    await doc.ref.update(updatedUsage);
+    return { success: true, data: { id: doc.id, ...doc.data(), ...updatedUsage } };
+  } catch (error: any) {
+    console.error('Error updating user plan server-side:', error);
+    return { success: false, error: error.message };
+  }
+}
 
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
@@ -78,7 +118,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 
     // Update user plan in Firebase
     const plan = tierId === 'pro' ? 'pro' : 'enterprise';
-    const result = await upgradeUserPlan(plan);
+    const result = await updateUserPlanServerSide(userId, plan);
     
     if (result.success) {
       console.log(`Successfully upgraded user ${userId} to ${plan} plan`);
@@ -103,7 +143,7 @@ async function handleSubscriptionCreated(subscription: Stripe.Subscription) {
     
     // Update user plan in Firebase
     const plan = tierId === 'pro' ? 'pro' : 'enterprise';
-    const result = await upgradeUserPlan(plan);
+    const result = await updateUserPlanServerSide(userId, plan);
     
     if (result.success) {
       console.log(`Successfully upgraded user ${userId} to ${plan} plan`);
@@ -129,7 +169,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     // Handle subscription changes (upgrades/downgrades)
     if (subscription.status === 'active') {
       const plan = tierId === 'pro' ? 'pro' : 'enterprise';
-      const result = await upgradeUserPlan(plan);
+      const result = await updateUserPlanServerSide(userId, plan);
       
       if (result.success) {
         console.log(`Successfully updated user ${userId} to ${plan} plan`);
@@ -153,9 +193,14 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
 
     console.log(`Subscription deleted for user ${userId}`);
     
-    // Note: upgradeUserPlan doesn't support 'free' plan
-    // User will remain on their current plan until manually changed
-    console.log(`Subscription deleted for user ${userId} - plan unchanged`);
+    // Downgrade user to free plan when subscription is cancelled
+    const result = await updateUserPlanServerSide(userId, 'free');
+    
+    if (result.success) {
+      console.log(`Successfully downgraded user ${userId} to free plan after subscription deletion`);
+    } else {
+      console.error(`Failed to downgrade user ${userId}:`, result.error);
+    }
   } catch (error) {
     console.error('Error handling subscription deleted:', error);
   }

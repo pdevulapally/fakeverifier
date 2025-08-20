@@ -28,7 +28,8 @@ import {
   Eye,
   EyeOff,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  CreditCard
 } from "lucide-react"
 import { getCurrentUser, getUserTokenUsage, getVerificationHistory, TokenUsage, VerificationData, onAuthStateChange } from "@/lib/firebase"
 import { formatTimeAgo } from "@/lib/utils"
@@ -330,6 +331,12 @@ export default function UsagePage() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Link href="/billing">
+                <Button variant="outline" size="sm">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Billing
+                </Button>
+              </Link>
               <Button variant="outline" size="sm" onClick={loadData}>
                 <RefreshCw className="w-4 h-4 mr-2" />
                 Refresh

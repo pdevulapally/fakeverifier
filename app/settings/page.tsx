@@ -590,6 +590,64 @@ export default function SettingsPage() {
             )}
           </Card>
 
+          {/* Billing & Subscription */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <CreditCard className="w-5 h-5 text-green-600" />
+                <h2 className="text-lg font-semibold">Billing & Subscription</h2>
+              </div>
+              <Link href="/billing">
+                <Button variant="outline" size="sm">
+                  <CreditCard className="w-4 h-4 mr-2" />
+                  Manage Billing
+                </Button>
+              </Link>
+            </div>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <Label className="text-sm font-medium text-gray-700">Current Plan</Label>
+                  <div className="flex items-center gap-2 mt-1">
+                    {tokenUsage && getAccountTypeIcon(tokenUsage.plan)}
+                    <p className="text-gray-900 capitalize">
+                      {tokenUsage?.plan || 'Free'} Plan
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <Label className="text-sm font-medium text-gray-700">Monthly Cost</Label>
+                  <p className="text-gray-900">
+                    {tokenUsage?.plan === 'free' ? 'Free' : 
+                     tokenUsage?.plan === 'pro' ? '$9.99' : 
+                     tokenUsage?.plan === 'enterprise' ? '$49.99' : 'Free'}
+                  </p>
+                </div>
+              </div>
+              {tokenUsage && (
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label className="text-sm font-medium text-gray-700">Token Usage</Label>
+                    <p className="text-gray-900">
+                      {tokenUsage.used.toLocaleString()} / {tokenUsage.total.toLocaleString()} tokens
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <Label className="text-sm font-medium text-gray-700">Next Reset</Label>
+                    <p className="text-gray-900">
+                      {tokenUsage.resetDate ? new Date(tokenUsage.resetDate).toLocaleDateString() : 'N/A'}
+                    </p>
+                  </div>
+                </div>
+              )}
+              <div className="pt-2">
+                <p className="text-sm text-gray-500">
+                  Manage your subscription, view billing history, and update your plan settings.
+                </p>
+              </div>
+            </div>
+          </Card>
+
           {/* Notifications */}
           <Card className="p-6">
             <div className="flex items-center gap-3 mb-4">

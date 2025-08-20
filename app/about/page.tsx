@@ -10,13 +10,13 @@ export default function AboutPage() {
     <div className="bg-background min-h-screen">
       <Header />
       {/* Premium Hero Section */}
-      <section className="relative py-32 lg:py-40 overflow-hidden">
+      <section className="relative py-16 sm:py-24 lg:py-32 xl:py-40 overflow-hidden">
         {/* Advanced Background */}
         <div className="absolute inset-0 z-0">
           <div className="absolute inset-0 bg-gradient-to-br from-blue-600/30 via-purple-600/20 to-background"></div>
-          <div className="absolute top-0 left-1/2 -z-10 h-[1200px] w-[1200px] -translate-x-1/2 rounded-full bg-gradient-radial from-blue-500/20 via-blue-400/10 to-transparent blur-3xl"></div>
-          <div className="absolute bottom-0 right-0 -z-10 h-[800px] w-[800px] rounded-full bg-gradient-radial from-purple-500/15 via-purple-400/5 to-transparent blur-3xl"></div>
-          <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b82f620_1px,transparent_1px),linear-gradient(to_bottom,#3b82f620_1px,transparent_1px)] bg-[size:24px_24px] opacity-20"></div>
+          <div className="absolute top-0 left-1/2 -z-10 h-[800px] sm:h-[1000px] lg:h-[1200px] w-[800px] sm:w-[1000px] lg:w-[1200px] -translate-x-1/2 rounded-full bg-gradient-radial from-blue-500/20 via-blue-400/10 to-transparent blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 -z-10 h-[600px] sm:h-[700px] lg:h-[800px] w-[600px] sm:w-[700px] lg:w-[800px] rounded-full bg-gradient-radial from-purple-500/15 via-purple-400/5 to-transparent blur-3xl"></div>
+          <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b82f620_1px,transparent_1px),linear-gradient(to_bottom,#3b82f620_1px,transparent_1px)] bg-[size:16px_16px] sm:bg-[size:24px_24px] opacity-20"></div>
         </div>
         
         <div className="relative z-10 container mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,12 +26,12 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="mb-8"
+              className="mb-6 sm:mb-8"
             >
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/30 rounded-full px-6 py-3 backdrop-blur-sm">
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/30 rounded-full px-4 sm:px-6 py-2 sm:py-3 backdrop-blur-sm">
                 <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                <span className="text-sm font-medium text-blue-600">AI-Powered Verification Technology</span>
-                <Award className="h-4 w-4 text-blue-600" />
+                <span className="text-xs sm:text-sm font-medium text-blue-600">AI-Powered Verification Technology</span>
+                <Award className="h-3 w-3 sm:h-4 sm:w-4 text-blue-600" />
               </div>
             </motion.div>
 
@@ -40,12 +40,12 @@ export default function AboutPage() {
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.8, delay: 0.1 }}
-              className="mb-12"
+              className="mb-8 sm:mb-12"
             >
               <div className="relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-2xl opacity-30 animate-pulse"></div>
-                <div className="relative bg-gradient-to-br from-blue-600 to-purple-600 w-24 h-24 rounded-full flex items-center justify-center mx-auto shadow-2xl">
-                  <Brain className="h-12 w-12 text-white" />
+                <div className="relative bg-gradient-to-br from-blue-600 to-purple-600 w-16 h-16 sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center mx-auto shadow-2xl">
+                  <Brain className="h-8 w-8 sm:h-10 sm:w-10 lg:h-12 lg:w-12 text-white" />
                 </div>
               </div>
             </motion.div>
@@ -55,7 +55,7 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-5xl sm:text-6xl lg:text-7xl font-bold mb-8"
+              className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-bold mb-6 sm:mb-8 px-4"
             >
               <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-blue-600 bg-clip-text text-transparent">
                 Combating Fake News
@@ -69,7 +69,7 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
-              className="text-xl lg:text-2xl text-muted-foreground mb-16 max-w-4xl mx-auto leading-relaxed"
+              className="text-lg sm:text-xl lg:text-2xl text-muted-foreground mb-12 sm:mb-16 max-w-4xl mx-auto leading-relaxed px-4"
             >
               An innovative final year project leveraging cutting-edge artificial intelligence to detect and prevent the spread of misinformation in digital media with unprecedented accuracy.
             </motion.p>
@@ -79,48 +79,48 @@ export default function AboutPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.4 }}
-              className="grid grid-cols-1 md:grid-cols-3 gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 px-4"
             >
               <div className="group relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl p-8 border border-blue-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="relative bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-blue-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
                   <div className="flex items-center justify-between mb-4">
-                    <Target className="h-8 w-8 text-blue-600" />
+                    <Target className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                     <div className="flex items-center gap-1">
                       {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 text-yellow-500 fill-current" />
+                        <Star key={i} className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-500 fill-current" />
                       ))}
                     </div>
                   </div>
-                  <h3 className="text-4xl font-bold text-blue-600 mb-2">95%</h3>
-                  <p className="text-muted-foreground font-medium">Detection Accuracy</p>
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-blue-600 mb-2">95%</h3>
+                  <p className="text-muted-foreground font-medium text-sm sm:text-base">Detection Accuracy</p>
                 </div>
               </div>
 
               <div className="group relative">
                 <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-8 border border-purple-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-purple-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
                   <div className="flex items-center justify-between mb-4">
-                    <Zap className="h-8 w-8 text-purple-600" />
+                    <Zap className="h-6 w-6 sm:h-8 sm:w-8 text-purple-600" />
                     <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                   </div>
-                  <h3 className="text-4xl font-bold text-purple-600 mb-2">0.5s</h3>
-                  <p className="text-muted-foreground font-medium">Processing Time</p>
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-purple-600 mb-2">0.5s</h3>
+                  <p className="text-muted-foreground font-medium text-sm sm:text-base">Processing Time</p>
                 </div>
               </div>
 
-              <div className="group relative">
+              <div className="group relative sm:col-span-2 lg:col-span-1">
                 <div className="absolute inset-0 bg-gradient-to-r from-green-600/20 to-blue-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                <div className="relative bg-gradient-to-br from-green-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl p-8 border border-green-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="relative bg-gradient-to-br from-green-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-green-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
                   <div className="flex items-center justify-between mb-4">
-                    <Globe className="h-8 w-8 text-green-600" />
+                    <Globe className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                     <div className="flex items-center gap-1">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-xs text-green-600 font-medium">LIVE</span>
                     </div>
                   </div>
-                  <h3 className="text-4xl font-bold text-green-600 mb-2">24/7</h3>
-                  <p className="text-muted-foreground font-medium">Real-time Analysis</p>
+                  <h3 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-green-600 mb-2">24/7</h3>
+                  <p className="text-muted-foreground font-medium text-sm sm:text-base">Real-time Analysis</p>
                 </div>
               </div>
             </motion.div>
@@ -129,61 +129,61 @@ export default function AboutPage() {
       </section>
 
       {/* Premium Problem Section */}
-      <section className="py-24 lg:py-32 relative">
+      <section className="py-16 sm:py-20 lg:py-24 xl:py-32 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-muted/50 to-background"></div>
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
             <motion.div
               initial={{ opacity: 0, x: -30 }}
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
             >
-              <div className="mb-8">
-                <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-200/30 rounded-full px-4 py-2 mb-6">
-                  <AlertTriangle className="h-4 w-4 text-red-500" />
-                  <span className="text-sm font-medium text-red-600">Critical Challenge</span>
+              <div className="mb-6 sm:mb-8">
+                <div className="inline-flex items-center gap-2 bg-red-500/10 border border-red-200/30 rounded-full px-3 sm:px-4 py-2 mb-4 sm:mb-6">
+                  <AlertTriangle className="h-3 w-3 sm:h-4 sm:w-4 text-red-500" />
+                  <span className="text-xs sm:text-sm font-medium text-red-600">Critical Challenge</span>
                 </div>
-                <h2 className="text-4xl lg:text-5xl font-bold text-foreground mb-6">
+                <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
                   Understanding the
                   <span className="bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent"> Fake News Crisis</span>
                 </h2>
               </div>
               
-              <p className="text-lg lg:text-xl text-muted-foreground mb-10 leading-relaxed">
+              <p className="text-base sm:text-lg lg:text-xl text-muted-foreground mb-8 sm:mb-10 leading-relaxed">
                 Fake news has become a critical challenge in today's digital age, particularly following events like the Southport attack. This project addresses the urgent need for automated verification systems that can keep pace with the rapid spread of misinformation.
               </p>
               
-              <div className="space-y-6">
-                <div className="flex items-start gap-4 p-4 bg-red-500/5 border border-red-200/20 rounded-xl">
-                  <AlertTriangle className="h-6 w-6 text-red-500 mt-1 flex-shrink-0" />
+              <div className="space-y-4 sm:space-y-6">
+                <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-red-500/5 border border-red-200/20 rounded-xl">
+                  <AlertTriangle className="h-5 w-5 sm:h-6 sm:w-6 text-red-500 mt-1 flex-shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-foreground mb-1">Manipulated Content & Deep Fakes</h4>
-                    <p className="text-muted-foreground text-sm">Advanced AI-generated content that's increasingly difficult to detect</p>
+                    <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base">Manipulated Content & Deep Fakes</h4>
+                    <p className="text-muted-foreground text-xs sm:text-sm">Advanced AI-generated content that's increasingly difficult to detect</p>
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-4 p-4 bg-yellow-500/5 border border-yellow-200/20 rounded-xl">
-                  <Zap className="h-6 w-6 text-yellow-500 mt-1 flex-shrink-0" />
+                <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-yellow-500/5 border border-yellow-200/20 rounded-xl">
+                  <Zap className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500 mt-1 flex-shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-foreground mb-1">Rapid Viral Spread</h4>
-                    <p className="text-muted-foreground text-sm">Misinformation spreads faster than fact-checking can keep up</p>
+                    <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base">Rapid Viral Spread</h4>
+                    <p className="text-muted-foreground text-xs sm:text-sm">Misinformation spreads faster than fact-checking can keep up</p>
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-4 p-4 bg-blue-500/5 border border-blue-200/20 rounded-xl">
-                  <Users className="h-6 w-6 text-blue-500 mt-1 flex-shrink-0" />
+                <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-blue-500/5 border border-blue-200/20 rounded-xl">
+                  <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-500 mt-1 flex-shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-foreground mb-1">Social & Political Impact</h4>
-                    <p className="text-muted-foreground text-sm">Real-world consequences affecting communities and democracy</p>
+                    <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base">Social & Political Impact</h4>
+                    <p className="text-muted-foreground text-xs sm:text-sm">Real-world consequences affecting communities and democracy</p>
                   </div>
                 </div>
                 
-                <div className="flex items-start gap-4 p-4 bg-green-500/5 border border-green-200/20 rounded-xl">
-                  <Globe className="h-6 w-6 text-green-500 mt-1 flex-shrink-0" />
+                <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-green-500/5 border border-green-200/20 rounded-xl">
+                  <Globe className="h-5 w-5 sm:h-6 sm:w-6 text-green-500 mt-1 flex-shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-foreground mb-1">Global Scale Challenge</h4>
-                    <p className="text-muted-foreground text-sm">Cross-border misinformation affecting billions worldwide</p>
+                    <h4 className="font-semibold text-foreground mb-1 text-sm sm:text-base">Global Scale Challenge</h4>
+                    <p className="text-muted-foreground text-xs sm:text-sm">Cross-border misinformation affecting billions worldwide</p>
                   </div>
                 </div>
               </div>
@@ -194,22 +194,22 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.8 }}
               viewport={{ once: true }}
-              className="relative"
+              className="relative order-first lg:order-last"
             >
               <div className="relative">
-                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-3xl blur-2xl"></div>
-                <div className="relative bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-3xl p-8 border border-blue-200/30 shadow-2xl">
-                  <div className="aspect-square bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-2xl sm:rounded-3xl blur-2xl"></div>
+                <div className="relative bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-blue-200/30 shadow-2xl">
+                  <div className="aspect-square bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center relative overflow-hidden">
                     <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] animate-pulse"></div>
-                    <Brain className="h-24 w-24 text-blue-600 relative z-10" />
+                    <Brain className="h-16 w-16 sm:h-20 sm:w-20 lg:h-24 lg:w-24 text-blue-600 relative z-10" />
                   </div>
                   
                   {/* Floating Elements */}
-                  <div className="absolute -top-4 -right-4 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full p-3 shadow-lg">
-                    <Shield className="h-6 w-6 text-white" />
+                  <div className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full p-2 sm:p-3 shadow-lg">
+                    <Shield className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                   </div>
-                  <div className="absolute -bottom-4 -left-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full p-3 shadow-lg">
-                    <Search className="h-6 w-6 text-white" />
+                  <div className="absolute -bottom-2 -left-2 sm:-bottom-4 sm:-left-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full p-2 sm:p-3 shadow-lg">
+                    <Search className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
                   </div>
                 </div>
               </div>
@@ -219,29 +219,29 @@ export default function AboutPage() {
       </section>
 
       {/* Premium Technology Section */}
-      <section className="py-24 lg:py-32 bg-gradient-to-b from-background to-muted/30 relative">
-        <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b82f620_1px,transparent_1px),linear-gradient(to_bottom,#3b82f620_1px,transparent_1px)] bg-[size:24px_24px] opacity-10"></div>
+      <section className="py-16 sm:py-20 lg:py-24 xl:py-32 bg-gradient-to-b from-background to-muted/30 relative">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b82f620_1px,transparent_1px),linear-gradient(to_bottom,#3b82f620_1px,transparent_1px)] bg-[size:16px_16px] sm:bg-[size:24px_24px] opacity-10"></div>
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-12 sm:mb-16 lg:mb-20"
           >
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/30 rounded-full px-6 py-3 mb-8">
-              <Brain className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-medium text-blue-600">Advanced Technology Stack</span>
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/30 rounded-full px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8">
+              <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              <span className="text-xs sm:text-sm font-medium text-blue-600">Advanced Technology Stack</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-foreground mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
               My <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">AI Solution</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               Leveraging cutting-edge AI technologies to create a comprehensive news verification system
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -250,17 +250,17 @@ export default function AboutPage() {
               className="group relative"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl p-8 border border-blue-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-                <div className="bg-gradient-to-br from-blue-600 to-purple-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                  <Brain className="h-8 w-8 text-white" />
+              <div className="relative bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-blue-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="bg-gradient-to-br from-blue-600 to-purple-600 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg">
+                  <Brain className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-4">Advanced AI Model</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">Advanced AI Model</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Powered by GPT-4o-search-preview with search preview capabilities for real-time fact-checking and comprehensive news analysis with unprecedented accuracy.
                 </p>
-                <div className="mt-6 flex items-center gap-2 text-blue-600 font-medium">
+                <div className="mt-4 sm:mt-6 flex items-center gap-2 text-blue-600 font-medium text-sm sm:text-base">
                   <span>Learn More</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </div>
               </div>
             </motion.div>
@@ -273,17 +273,17 @@ export default function AboutPage() {
               className="group relative"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-8 border border-purple-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-                <div className="bg-gradient-to-br from-purple-600 to-pink-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                  <Search className="h-8 w-8 text-white" />
+              <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-purple-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="bg-gradient-to-br from-purple-600 to-pink-600 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg">
+                  <Search className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-4">GPT-4 Search Preview</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">GPT-4 Search Preview</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Utilizing GPT-4's advanced search preview capabilities to verify news against reliable sources in real-time with comprehensive fact-checking.
                 </p>
-                <div className="mt-6 flex items-center gap-2 text-purple-600 font-medium">
+                <div className="mt-4 sm:mt-6 flex items-center gap-2 text-purple-600 font-medium text-sm sm:text-base">
                   <span>Learn More</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </div>
               </div>
             </motion.div>
@@ -293,20 +293,20 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
               viewport={{ once: true }}
-              className="group relative"
+              className="group relative md:col-span-2 lg:col-span-1"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-600/20 to-blue-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-green-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl p-8 border border-green-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-                <div className="bg-gradient-to-br from-green-600 to-blue-600 w-16 h-16 rounded-2xl flex items-center justify-center mb-6 shadow-lg">
-                  <Cloud className="h-8 w-8 text-white" />
+              <div className="relative bg-gradient-to-br from-green-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-green-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="bg-gradient-to-br from-green-600 to-blue-600 w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center mb-4 sm:mb-6 shadow-lg">
+                  <Cloud className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-4">Firebase Integration</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">Firebase Integration</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Real-time data storage, user authentication, and secure chat history management using Firebase's cloud infrastructure for seamless performance.
                 </p>
-                <div className="mt-6 flex items-center gap-2 text-green-600 font-medium">
+                <div className="mt-4 sm:mt-6 flex items-center gap-2 text-green-600 font-medium text-sm sm:text-base">
                   <span>Learn More</span>
-                  <ArrowRight className="h-4 w-4" />
+                  <ArrowRight className="h-3 w-3 sm:h-4 sm:w-4" />
                 </div>
               </div>
             </motion.div>
@@ -315,7 +315,7 @@ export default function AboutPage() {
       </section>
 
       {/* Premium Impact Section */}
-      <section className="py-24 lg:py-32 relative">
+      <section className="py-16 sm:py-20 lg:py-24 xl:py-32 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-muted/30 to-background"></div>
         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -323,21 +323,21 @@ export default function AboutPage() {
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-20"
+            className="text-center mb-12 sm:mb-16 lg:mb-20"
           >
-            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600/10 to-blue-600/10 border border-green-200/30 rounded-full px-6 py-3 mb-8">
-              <Target className="h-5 w-5 text-green-600" />
-              <span className="text-sm font-medium text-green-600">Real-World Impact</span>
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-green-600/10 to-blue-600/10 border border-green-200/30 rounded-full px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+              <span className="text-xs sm:text-sm font-medium text-green-600">Real-World Impact</span>
             </div>
-            <h2 className="text-4xl lg:text-5xl font-bold text-foreground mb-6">
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
               Making a <span className="bg-gradient-to-r from-green-600 to-blue-600 bg-clip-text text-transparent">Difference</span>
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
               Our AI-powered solution is creating positive change across multiple dimensions
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -346,16 +346,16 @@ export default function AboutPage() {
               className="group relative text-center"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-purple-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl p-8 border border-blue-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-                <div className="bg-gradient-to-br from-blue-600 to-purple-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Shield className="h-10 w-10 text-white" />
+              <div className="relative bg-gradient-to-br from-blue-600/10 to-purple-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-blue-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="bg-gradient-to-br from-blue-600 to-purple-600 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                  <Shield className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-4">Protection</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">Protection</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Safeguarding users from misleading information and propaganda with advanced AI detection capabilities.
                 </p>
-                <div className="mt-6 flex items-center justify-center gap-2 text-blue-600 font-medium">
-                  <CheckCircle className="h-5 w-5" />
+                <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2 text-blue-600 font-medium text-sm sm:text-base">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Active Protection</span>
                 </div>
               </div>
@@ -369,16 +369,16 @@ export default function AboutPage() {
               className="group relative text-center"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-8 border border-purple-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-                <div className="bg-gradient-to-br from-purple-600 to-pink-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Brain className="h-10 w-10 text-white" />
+              <div className="relative bg-gradient-to-br from-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-purple-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="bg-gradient-to-br from-purple-600 to-pink-600 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                  <Brain className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-4">Education</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">Education</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Promoting critical thinking and digital literacy through interactive AI-powered learning experiences.
                 </p>
-                <div className="mt-6 flex items-center justify-center gap-2 text-purple-600 font-medium">
-                  <CheckCircle className="h-5 w-5" />
+                <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2 text-purple-600 font-medium text-sm sm:text-base">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Smart Learning</span>
                 </div>
               </div>
@@ -389,171 +389,171 @@ export default function AboutPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.3 }}
               viewport={{ once: true }}
-              className="group relative text-center"
+              className="group relative text-center md:col-span-2 lg:col-span-1"
             >
               <div className="absolute inset-0 bg-gradient-to-r from-green-600/20 to-blue-600/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="relative bg-gradient-to-br from-green-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl p-8 border border-green-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
-                <div className="bg-gradient-to-br from-green-600 to-blue-600 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg">
-                  <Globe className="h-10 w-10 text-white" />
+              <div className="relative bg-gradient-to-br from-green-600/10 to-blue-600/10 backdrop-blur-sm rounded-2xl p-6 sm:p-8 border border-green-200/30 shadow-xl hover:shadow-2xl transition-all duration-500 hover:scale-105">
+                <div className="bg-gradient-to-br from-green-600 to-blue-600 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg">
+                  <Globe className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
                 </div>
-                <h3 className="text-2xl font-bold text-foreground mb-4">Global Reach</h3>
-                <p className="text-muted-foreground leading-relaxed">
+                <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">Global Reach</h3>
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Fighting misinformation across borders and platforms with scalable AI technology.
                 </p>
-                <div className="mt-6 flex items-center justify-center gap-2 text-green-600 font-medium">
-                  <CheckCircle className="h-5 w-5" />
+                <div className="mt-4 sm:mt-6 flex items-center justify-center gap-2 text-green-600 font-medium text-sm sm:text-base">
+                  <CheckCircle className="h-4 w-4 sm:h-5 sm:w-5" />
                   <span>Worldwide Impact</span>
                 </div>
               </div>
             </motion.div>
-                     </div>
-         </div>
-       </section>
+          </div>
+        </div>
+      </section>
 
-       {/* About Creator Section */}
-       <section className="py-24 lg:py-32 bg-gradient-to-b from-background to-muted/30 relative">
-         <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b82f620_1px,transparent_1px),linear-gradient(to_bottom,#3b82f620_1px,transparent_1px)] bg-[size:24px_24px] opacity-10"></div>
-         <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
-           <motion.div
-             initial={{ opacity: 0, y: 20 }}
-             whileInView={{ opacity: 1, y: 0 }}
-             transition={{ duration: 0.8 }}
-             viewport={{ once: true }}
-             className="text-center mb-20"
-           >
-             <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/30 rounded-full px-6 py-3 mb-8">
-               <Users className="h-5 w-5 text-blue-600" />
-               <span className="text-sm font-medium text-blue-600">Meet the Creator</span>
-             </div>
-             <h2 className="text-4xl lg:text-5xl font-bold text-foreground mb-6">
-               About <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Preetham Devulapally</span>
-             </h2>
-             <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-               The innovative mind behind FakeVerifier, dedicated to combating misinformation through AI technology
-             </p>
-           </motion.div>
+      {/* About Creator Section */}
+      <section className="py-16 sm:py-20 lg:py-24 xl:py-32 bg-gradient-to-b from-background to-muted/30 relative">
+        <div className="absolute inset-0 bg-[linear-gradient(to_right,#3b82f620_1px,transparent_1px),linear-gradient(to_bottom,#3b82f620_1px,transparent_1px)] bg-[size:16px_16px] sm:bg-[size:24px_24px] opacity-10"></div>
+        <div className="relative container mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12 sm:mb-16 lg:mb-20"
+          >
+            <div className="inline-flex items-center gap-2 bg-gradient-to-r from-blue-600/10 to-purple-600/10 border border-blue-200/30 rounded-full px-4 sm:px-6 py-2 sm:py-3 mb-6 sm:mb-8">
+              <Users className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+              <span className="text-xs sm:text-sm font-medium text-blue-600">Meet the Creator</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-foreground mb-4 sm:mb-6">
+              About <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Preetham Devulapally</span>
+            </h2>
+            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto px-4">
+              The innovative mind behind FakeVerifier, dedicated to combating misinformation through AI technology
+            </p>
+          </motion.div>
 
-           <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-             <motion.div
-               initial={{ opacity: 0, x: -30 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               transition={{ duration: 0.8 }}
-               viewport={{ once: true }}
-               className="relative"
-             >
-               <div className="relative">
-                 <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-3xl blur-2xl"></div>
-                 <div className="relative bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-3xl p-8 border border-blue-200/30 shadow-2xl">
-                   <div className="aspect-square bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-2xl flex items-center justify-center relative overflow-hidden">
-                     <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] animate-pulse"></div>
-                                           <div className="relative z-10 text-center">
-                        <div className="w-32 h-32 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-lg overflow-hidden border-4 border-white">
-                          <img 
-                            src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/407336793_6833926710054844_1424313180351365942_n.jpg-rQyDcOudtZtxVEZqeJi8Mc7L8a1owU.jpeg"
-                            alt="Preetham Devulapally" 
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <h3 className="text-2xl font-bold text-foreground mb-2">Preetham Devulapally</h3>
-                        <p className="text-muted-foreground">Final Year Student</p>
-                        <p className="text-blue-600 font-medium">University of Westminster</p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 sm:gap-12 lg:gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="relative order-first lg:order-last"
+            >
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-purple-600/20 rounded-2xl sm:rounded-3xl blur-2xl"></div>
+                <div className="relative bg-gradient-to-br from-blue-600/10 via-purple-600/10 to-pink-600/10 backdrop-blur-sm rounded-2xl sm:rounded-3xl p-6 sm:p-8 border border-blue-200/30 shadow-2xl">
+                  <div className="aspect-square bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 rounded-xl sm:rounded-2xl flex items-center justify-center relative overflow-hidden">
+                    <div className="absolute inset-0 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.1)_50%,transparent_75%)] animate-pulse"></div>
+                    <div className="relative z-10 text-center">
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-lg overflow-hidden border-4 border-white">
+                        <img 
+                          src="https://hebbkx1anhila5yf.public.blob.vercel-storage.com/407336793_6833926710054844_1424313180351365942_n.jpg-rQyDcOudtZtxVEZqeJi8Mc7L8a1owU.jpeg"
+                          alt="Preetham Devulapally" 
+                          className="w-full h-full object-cover"
+                        />
                       </div>
-                   </div>
-                   
-                   {/* Floating Elements */}
-                   <div className="absolute -top-4 -right-4 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full p-3 shadow-lg">
-                     <Brain className="h-6 w-6 text-white" />
-                   </div>
-                   <div className="absolute -bottom-4 -left-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full p-3 shadow-lg">
-                     <Award className="h-6 w-6 text-white" />
-                   </div>
-                 </div>
-               </div>
-             </motion.div>
+                      <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-1 sm:mb-2">Preetham Devulapally</h3>
+                      <p className="text-muted-foreground text-sm sm:text-base">Final Year Student</p>
+                      <p className="text-blue-600 font-medium text-sm sm:text-base">University of Westminster</p>
+                    </div>
+                  </div>
+                  
+                  {/* Floating Elements */}
+                  <div className="absolute -top-2 -right-2 sm:-top-4 sm:-right-4 bg-gradient-to-br from-blue-600 to-purple-600 rounded-full p-2 sm:p-3 shadow-lg">
+                    <Brain className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                  </div>
+                  <div className="absolute -bottom-2 -left-2 sm:-bottom-4 sm:-left-4 bg-gradient-to-br from-purple-600 to-pink-600 rounded-full p-2 sm:p-3 shadow-lg">
+                    <Award className="h-4 w-4 sm:h-6 sm:w-6 text-white" />
+                  </div>
+                </div>
+              </div>
+            </motion.div>
 
-             <motion.div
-               initial={{ opacity: 0, x: 30 }}
-               whileInView={{ opacity: 1, x: 0 }}
-               transition={{ duration: 0.8 }}
-               viewport={{ once: true }}
-             >
-               <div className="space-y-8">
-                 <div>
-                   <h3 className="text-2xl font-bold text-foreground mb-4">The Vision</h3>
-                   <p className="text-lg text-muted-foreground leading-relaxed mb-6">
-                     As a final year student at the University of Westminster, I recognized the growing threat of misinformation in our digital age. The Southport attack and similar events highlighted the urgent need for automated verification systems that could keep pace with the rapid spread of fake news.
-                   </p>
-                   <p className="text-lg text-muted-foreground leading-relaxed">
-                     This project represents my commitment to leveraging cutting-edge AI technology to create a solution that not only detects misinformation but also educates users about digital literacy and critical thinking.
-                   </p>
-                 </div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <div className="space-y-6 sm:space-y-8">
+                <div>
+                  <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">The Vision</h3>
+                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed mb-4 sm:mb-6">
+                    As a final year student at the University of Westminster, I recognized the growing threat of misinformation in our digital age. The Southport attack and similar events highlighted the urgent need for automated verification systems that could keep pace with the rapid spread of fake news.
+                  </p>
+                  <p className="text-base sm:text-lg text-muted-foreground leading-relaxed">
+                    This project represents my commitment to leveraging cutting-edge AI technology to create a solution that not only detects misinformation but also educates users about digital literacy and critical thinking.
+                  </p>
+                </div>
 
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-xl p-6 border border-blue-200/30">
-                     <div className="flex items-center gap-3 mb-3">
-                       <div className="bg-blue-600/20 w-10 h-10 rounded-lg flex items-center justify-center">
-                         <Brain className="h-5 w-5 text-blue-600" />
-                       </div>
-                       <h4 className="font-semibold text-foreground">AI & Machine Learning</h4>
-                     </div>
-                     <p className="text-muted-foreground text-sm">
-                       Specialized in artificial intelligence and machine learning technologies
-                     </p>
-                   </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                  <div className="bg-gradient-to-br from-blue-600/10 to-purple-600/10 rounded-xl p-4 sm:p-6 border border-blue-200/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-blue-600/20 w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center">
+                        <Brain className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                      </div>
+                      <h4 className="font-semibold text-foreground text-sm sm:text-base">AI & Machine Learning</h4>
+                    </div>
+                    <p className="text-muted-foreground text-xs sm:text-sm">
+                      Specialized in artificial intelligence and machine learning technologies
+                    </p>
+                  </div>
 
-                   <div className="bg-gradient-to-br from-purple-600/10 to-pink-600/10 rounded-xl p-6 border border-purple-200/30">
-                     <div className="flex items-center gap-3 mb-3">
-                       <div className="bg-purple-600/20 w-10 h-10 rounded-lg flex items-center justify-center">
-                         <Shield className="h-5 w-5 text-purple-600" />
-                       </div>
-                       <h4 className="font-semibold text-foreground">Cybersecurity</h4>
-                     </div>
-                     <p className="text-muted-foreground text-sm">
-                       Focused on digital security and information verification systems
-                     </p>
-                   </div>
+                  <div className="bg-gradient-to-br from-purple-600/10 to-pink-600/10 rounded-xl p-4 sm:p-6 border border-purple-200/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-purple-600/20 w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center">
+                        <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600" />
+                      </div>
+                      <h4 className="font-semibold text-foreground text-sm sm:text-base">Cybersecurity</h4>
+                    </div>
+                    <p className="text-muted-foreground text-xs sm:text-sm">
+                      Focused on digital security and information verification systems
+                    </p>
+                  </div>
 
-                   <div className="bg-gradient-to-br from-green-600/10 to-blue-600/10 rounded-xl p-6 border border-green-200/30">
-                     <div className="flex items-center gap-3 mb-3">
-                       <div className="bg-green-600/20 w-10 h-10 rounded-lg flex items-center justify-center">
-                         <Globe className="h-5 w-5 text-green-600" />
-                       </div>
-                       <h4 className="font-semibold text-foreground">Social Impact</h4>
-                     </div>
-                     <p className="text-muted-foreground text-sm">
-                       Committed to creating technology that benefits society
-                     </p>
-                   </div>
+                  <div className="bg-gradient-to-br from-green-600/10 to-blue-600/10 rounded-xl p-4 sm:p-6 border border-green-200/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-green-600/20 w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center">
+                        <Globe className="h-4 w-4 sm:h-5 sm:w-5 text-green-600" />
+                      </div>
+                      <h4 className="font-semibold text-foreground text-sm sm:text-base">Social Impact</h4>
+                    </div>
+                    <p className="text-muted-foreground text-xs sm:text-sm">
+                      Committed to creating technology that benefits society
+                    </p>
+                  </div>
 
-                   <div className="bg-gradient-to-br from-yellow-600/10 to-orange-600/10 rounded-xl p-6 border border-yellow-200/30">
-                     <div className="flex items-center gap-3 mb-3">
-                       <div className="bg-yellow-600/20 w-10 h-10 rounded-lg flex items-center justify-center">
-                         <Award className="h-5 w-5 text-yellow-600" />
-                       </div>
-                       <h4 className="font-semibold text-foreground">Innovation</h4>
-                     </div>
-                     <p className="text-muted-foreground text-sm">
-                       Passionate about developing innovative solutions to real-world problems
-                     </p>
-                   </div>
-                 </div>
+                  <div className="bg-gradient-to-br from-yellow-600/10 to-orange-600/10 rounded-xl p-4 sm:p-6 border border-yellow-200/30">
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="bg-yellow-600/20 w-8 h-8 sm:w-10 sm:h-10 rounded-lg flex items-center justify-center">
+                        <Award className="h-4 w-4 sm:h-5 sm:w-5 text-yellow-600" />
+                      </div>
+                      <h4 className="font-semibold text-foreground text-sm sm:text-base">Innovation</h4>
+                    </div>
+                    <p className="text-muted-foreground text-xs sm:text-sm">
+                      Passionate about developing innovative solutions to real-world problems
+                    </p>
+                  </div>
+                </div>
 
-                 <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-xl p-6 border border-blue-200/30">
-                   <div className="flex items-center gap-3 mb-4">
-                     <Target className="h-6 w-6 text-blue-600" />
-                     <h4 className="font-semibold text-foreground">Contact Information</h4>
-                   </div>
-                   <div className="space-y-2 text-muted-foreground">
-                                           <p><span className="font-medium text-foreground">Email:</span> PreethamDevulapally@gmail.com</p>
-                     <p><span className="font-medium text-foreground">Institution:</span> University of Westminster</p>
-                     <p><span className="font-medium text-foreground">Project:</span> Final Year Dissertation</p>
-                   </div>
-                 </div>
-               </div>
-             </motion.div>
-           </div>
-         </div>
-       </section>
-     </div>
-   );
- }
+                <div className="bg-gradient-to-r from-blue-600/10 to-purple-600/10 rounded-xl p-4 sm:p-6 border border-blue-200/30">
+                  <div className="flex items-center gap-3 mb-3 sm:mb-4">
+                    <Target className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
+                    <h4 className="font-semibold text-foreground text-sm sm:text-base">Contact Information</h4>
+                  </div>
+                  <div className="space-y-1 sm:space-y-2 text-muted-foreground text-xs sm:text-sm">
+                    <p><span className="font-medium text-foreground">Email:</span> PreethamDevulapally@gmail.com</p>
+                    <p><span className="font-medium text-foreground">Institution:</span> University of Westminster</p>
+                    <p><span className="font-medium text-foreground">Project:</span> Final Year Dissertation</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
