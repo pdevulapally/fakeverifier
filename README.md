@@ -359,9 +359,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **DevOps**: Vercel, Netlify, CI/CD
 
 ### **Contact**
-- **GitHub**: [@yourusername](https://github.com/yourusername)
-- **LinkedIn**: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-- **Portfolio**: [Your Portfolio](https://yourportfolio.com)
+- **GitHub**: [@pdevulapally](https://github.com/pdevulapally)
+- **LinkedIn**: [PreethamDevulapally](https://www.linkedin.com/in/preethamdevulapally/)
+- **Portfolio**: [Preetham Devulapally](https://preetham-devulapally.vercel.app/)
 
 ---
 
