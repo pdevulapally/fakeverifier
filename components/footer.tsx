@@ -1,10 +1,10 @@
-import { Shield, Twitter, Linkedin, Github } from "lucide-react"
+import { Shield, Linkedin, Github } from "lucide-react"
 
 export function Footer() {
   return (
     <footer className="bg-slate-800 text-white py-16">
       <div className="container mx-auto px-4">
-        <div className="grid md:grid-cols-4 gap-8 mb-12">
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img 
@@ -18,9 +18,22 @@ export function Footer() {
               FakeVerifier.
             </p>
             <div className="flex items-center gap-4">
-              <Twitter className="h-5 w-5 text-slate-400 hover:text-blue-400 cursor-pointer transition-colors" />
-              <Linkedin className="h-5 w-5 text-slate-400 hover:text-blue-400 cursor-pointer transition-colors" />
-              <Github className="h-5 w-5 text-slate-400 hover:text-blue-400 cursor-pointer transition-colors" />
+              <a 
+                href="https://github.com/pdevulapally/fakeverifier" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <Github className="h-5 w-5" />
+              </a>
+              <a 
+                href="https://www.linkedin.com/in/preethamdevulapally/" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-slate-400 hover:text-white transition-colors"
+              >
+                <Linkedin className="h-5 w-5" />
+              </a>
             </div>
           </div>
 
@@ -28,7 +41,7 @@ export function Footer() {
             <h4 className="font-serif font-bold mb-4">Product</h4>
             <ul className="space-y-2 text-slate-300">
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/features" className="hover:text-white transition-colors">
                   Features
                 </a>
               </li>
@@ -38,39 +51,8 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  API
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Integrations
-                </a>
-              </li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-serif font-bold mb-4">Company</h4>
-            <ul className="space-y-2 text-slate-300">
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/about" className="hover:text-white transition-colors">
                   About
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Blog
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Careers
-                </a>
-              </li>
-              <li>
-                <a href="#" className="hover:text-white transition-colors">
-                  Press
                 </a>
               </li>
             </ul>
@@ -80,12 +62,12 @@ export function Footer() {
             <h4 className="font-serif font-bold mb-4">Support</h4>
             <ul className="space-y-2 text-slate-300">
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/help" className="hover:text-white transition-colors">
                   Help Center
                 </a>
               </li>
               <li>
-                <a href="#" className="hover:text-white transition-colors">
+                <a href="/contact" className="hover:text-white transition-colors">
                   Contact
                 </a>
               </li>
