@@ -11,6 +11,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Search, Sparkles, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
+import { getUserTokenUsage, consumeTokens } from '@/lib/firebase';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface AnalysisResult {
   analysis: string;
@@ -24,6 +35,7 @@ export default function AISearchPreview() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState('');
+  const [showOutOfTokens, setShowOutOfTokens] = useState(false);
 
   const handleAnalysis = async () => {
     if (!content.trim()) {
@@ -36,6 +48,18 @@ export default function AISearchPreview() {
     setResult(null);
 
     try {
+      // Enforce token limit before analysis
+      const usageRes = await getUserTokenUsage();
+      if (!usageRes.success) {
+        throw new Error(usageRes.error || 'Unable to load token usage');
+      }
+      const usage = usageRes.data as any;
+      const remaining = (usage.total || 0) - (usage.used || 0);
+      if (remaining <= 0) {
+        setShowOutOfTokens(true);
+        return;
+      }
+
       const response = await fetch('/api/ai-analysis', {
         method: 'POST',
         headers: {
@@ -54,6 +78,9 @@ export default function AISearchPreview() {
       }
 
       setResult(data);
+
+      // Consume one token on successful analysis
+      await consumeTokens(1);
     } catch (err: any) {
       setError(err.message || 'An error occurred during analysis');
     } finally {
@@ -89,6 +116,22 @@ export default function AISearchPreview() {
 
   return (
     <div className="w-full max-w-4xl mx-auto space-y-6">
+      {/* Out of tokens dialog */}
+      <AlertDialog open={showOutOfTokens} onOpenChange={setShowOutOfTokens}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>You're out of tokens</AlertDialogTitle>
+            <AlertDialogDescription>
+              You have run out of verification tokens. Please upgrade your plan to continue analyzing content.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowOutOfTokens(false)}>Close</AlertDialogCancel>
+            <AlertDialogAction onClick={() => (window.location.href = '/pricing')}>Upgrade Plan</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
