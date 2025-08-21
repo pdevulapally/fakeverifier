@@ -13,7 +13,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Mail } from 'lucide-react';
+import { LogOut, User, Mail, Settings, CreditCard, BarChart3, Shield } from 'lucide-react';
+import Link from 'next/link';
 
 export default function UserProfile() {
   const { user } = useAuth();
@@ -61,6 +62,37 @@ export default function UserProfile() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        
+        <DropdownMenuItem asChild>
+          <Link href="/verify" className="flex items-center">
+            <Shield className="mr-2 h-4 w-4" />
+            <span>Dashboard</span>
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem asChild>
+          <Link href="/usage" className="flex items-center">
+            <BarChart3 className="mr-2 h-4 w-4" />
+            <span>Usage & Analytics</span>
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem asChild>
+          <Link href="/billing" className="flex items-center">
+            <CreditCard className="mr-2 h-4 w-4" />
+            <span>Billing & Subscription</span>
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuItem asChild>
+          <Link href="/settings" className="flex items-center">
+            <Settings className="mr-2 h-4 w-4" />
+            <span>Settings</span>
+          </Link>
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator />
+        
         <DropdownMenuItem onClick={handleSignOut} disabled={loading}>
           <LogOut className="mr-2 h-4 w-4" />
           <span>{loading ? 'Signing out...' : 'Sign out'}</span>
