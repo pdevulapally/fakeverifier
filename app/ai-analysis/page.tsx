@@ -3,6 +3,7 @@
 import { Header } from "@/components/header";
 import AISearchPreview from "@/components/ai-search-preview";
 import ProtectedRoute from "@/components/protected-route";
+import { TokenSystem } from "@/components/token-system";
 
 export default function AIAnalysisPage() {
   return (
@@ -17,6 +18,10 @@ export default function AIAnalysisPage() {
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
               Analyze news articles, social media posts, and other content with advanced AI-powered fact-checking and credibility assessment.
             </p>
+          </div>
+          {/* Token System */}
+          <div className="max-w-3xl mx-auto mb-8">
+            <TokenSystem onUpgradeClick={() => (window.location.href = "/pricing")} />
           </div>
           <AISearchPreview />
         </main>
