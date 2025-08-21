@@ -132,7 +132,7 @@ export function HeroSection() {
               <div className="absolute -inset-4 rounded-2xl bg-gradient-to-r from-blue-600/20 via-purple-600/20 to-blue-600/20 blur-xl"></div>
               <div className="relative rounded-2xl border border-blue-200/20 bg-background/50 p-2 backdrop-blur-sm">
                 <img
-                  src="/news-verification-dashboard.png"
+                  src="/Images/dashboard.png"
                   alt="FakeVerifier AI News Verification Dashboard - Real-time fact checking and credibility analysis interface"
                   className="rounded-xl w-full max-w-4xl"
                   loading="eager"
