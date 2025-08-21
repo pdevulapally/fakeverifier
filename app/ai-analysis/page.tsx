@@ -13,10 +13,10 @@ export default function AIAnalysisPage() {
         <main className="container mx-auto px-4 py-8 pt-24">
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-slate-900 mb-4">
-              AI Content Analysis
+              Quick Verification
             </h1>
             <p className="text-lg text-slate-600 max-w-2xl mx-auto">
-              Analyze news articles, social media posts, and other content with advanced AI-powered fact-checking and credibility assessment.
+              Fast AI-powered analysis for quick content verification. Perfect for analyzing news articles, social media posts, and other content with instant credibility assessment.
             </p>
           </div>
           {/* Token System */}

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Shield, Zap, CheckCircle } from "lucide-react"
 import { motion } from "framer-motion"
@@ -9,6 +9,19 @@ import Link from "next/link"
 
 export function CTASection() {
   const [showDemo, setShowDemo] = useState(false);
+  const [particles, setParticles] = useState<Array<{id: number, left: number, top: number, delay: number, duration: number}>>([]);
+
+  useEffect(() => {
+    // Generate particles only on client side to prevent hydration mismatch
+    const generatedParticles = Array.from({ length: 20 }, (_, i) => ({
+      id: i,
+      left: Math.random() * 100,
+      top: Math.random() * 100,
+      delay: Math.random() * 2,
+      duration: 3 + Math.random() * 2,
+    }));
+    setParticles(generatedParticles);
+  }, []);
 
   return (
     <section className="relative py-24 overflow-hidden">
@@ -21,22 +34,22 @@ export function CTASection() {
 
       {/* Animated particles */}
       <div className="absolute inset-0">
-        {[...Array(20)].map((_, i) => (
+        {particles.map((particle) => (
           <motion.div
-            key={i}
+            key={particle.id}
             className="absolute w-1 h-1 bg-white/20 rounded-full"
             style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
+              left: `${particle.left}%`,
+              top: `${particle.top}%`,
             }}
             animate={{
               y: [-20, -100],
               opacity: [0, 1, 0],
             }}
             transition={{
-              duration: 3 + Math.random() * 2,
+              duration: particle.duration,
               repeat: Number.POSITIVE_INFINITY,
-              delay: Math.random() * 2,
+              delay: particle.delay,
             }}
           />
         ))}

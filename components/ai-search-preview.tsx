@@ -136,7 +136,7 @@ export default function AISearchPreview() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Sparkles className="h-5 w-5 text-blue-600" />
-            AI Content Analysis
+            Quick Verification
           </CardTitle>
           <CardDescription>
             Get instant AI-powered analysis of news articles, social media posts, and other content for credibility and factual accuracy.

@@ -255,6 +255,7 @@ export function VerifySidebar({
           <SidebarGroupLabel>Tools</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+
               <SidebarMenuItem>
                 <SidebarMenuButton asChild>
                   <Link href="/usage">
