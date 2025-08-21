@@ -130,10 +130,21 @@ export default function VerifyPage() {
   const handleClearHistory = async () => {
     try {
       // Delete all verification data from Firebase
-      for (const item of verificationHistory) {
-        await deleteVerificationData(item.id)
+      const deletePromises = verificationHistory.map(async (item) => {
+        const result = await deleteVerificationData(item.id)
+        return { id: item.id, success: result.success, error: result.error }
+      })
+      
+      const results = await Promise.all(deletePromises)
+      const failedDeletions = results.filter(r => !r.success)
+      
+      if (failedDeletions.length > 0) {
+        console.error('Some deletions failed:', failedDeletions)
+        // Still clear local state but log the failures
       }
+      
       setVerificationHistory([])
+      console.log('Successfully cleared verification history')
     } catch (error) {
       console.error('Error clearing history:', error)
     }
@@ -141,10 +152,23 @@ export default function VerifyPage() {
 
   const handleDeleteItem = async (id: string) => {
     try {
-      await deleteVerificationData(id)
-      setVerificationHistory(prev => prev.filter(item => item.id !== id))
+      const result = await deleteVerificationData(id)
+      if (result.success) {
+        // Only update local state if Firebase deletion was successful
+        setVerificationHistory(prev => prev.filter(item => item.id !== id))
+        
+        // Reload verification history after a delay to account for Firebase's eventual consistency
+        setTimeout(async () => {
+          await loadVerificationHistory()
+        }, 2000)
+      } else {
+        console.error('Failed to delete verification from Firebase:', result.error)
+        // Show user feedback that deletion failed
+        alert('Failed to delete verification. Please try again.')
+      }
     } catch (error) {
       console.error('Error deleting verification:', error)
+      alert('Error deleting verification. Please try again.')
     }
   }
 
@@ -273,14 +297,10 @@ export default function VerifyPage() {
                     <div className="space-y-2">
                       <h3 className="font-semibold text-sm">Quick Actions</h3>
                       <div className="space-y-1">
-                        <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleNewVerification}>
-                          <Plus className="w-4 h-4 mr-2" />
-                          New Verification
-                        </Button>
-                        <Button variant="outline" size="sm" className="w-full justify-start">
-                          <FileText className="w-4 h-4 mr-2" />
-                          Upload Document
-                        </Button>
+                                                 <Button variant="outline" size="sm" className="w-full justify-start" onClick={handleNewVerification}>
+                           <Plus className="w-4 h-4 mr-2" />
+                           New Verification
+                         </Button>
                                                  <Button
                            variant="outline"
                            size="sm"

@@ -2,7 +2,7 @@
 import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
 import { getAuth, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, User } from "firebase/auth";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, limit, deleteDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, getDoc, query, where, orderBy, limit, deleteDoc, doc, updateDoc, serverTimestamp } from "firebase/firestore";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -223,18 +223,21 @@ export const getVerificationHistory = async (limitCount: number = 50) => {
     );
 
     const querySnapshot = await getDocs(q);
+    
     const verifications: VerificationData[] = [];
 
     querySnapshot.forEach((doc) => {
       const data = doc.data();
-      console.log('Raw verification data:', data);
+      
+      // Destructure data to exclude any 'id' field that might be in the document
+      const { id: dataId, ...dataWithoutId } = data;
+      
       verifications.push({
-        id: doc.id,
-        ...data,
+        id: doc.id, // Always use the Firestore document ID
+        ...dataWithoutId, // Spread the rest of the data without the id field
         timestamp: data.createdAt?.toDate() || new Date(),
       } as VerificationData);
     });
-
     return { success: true, data: verifications };
   } catch (error: any) {
     console.error('Error getting verification history:', error);
@@ -250,14 +253,28 @@ export const deleteVerificationData = async (verificationId: string) => {
       throw new Error('User not authenticated');
     }
 
-    console.log('Attempting to delete verification:', verificationId);
-    console.log('Current user:', user.uid);
+    // First, let's check if the document exists and belongs to the user
+    const docRef = doc(db, 'verifications', verificationId);
+    const docSnap = await getDoc(docRef);
+    
+    if (!docSnap.exists()) {
+      return { success: true };
+    }
+    
+    const data = docSnap.data();
+    
+    if (data.userId !== user.uid) {
+      return { success: false, error: 'Access denied - document does not belong to current user' };
+    }
 
     // Try to delete the document directly
-    // The security rules will handle the permission check
-    await deleteDoc(doc(db, 'verifications', verificationId));
+    await deleteDoc(docRef);
     
-    console.log('Successfully deleted verification:', verificationId);
+    // Verify the deletion was successful
+    const verifySnap = await getDoc(docRef);
+    if (verifySnap.exists()) {
+      return { success: false, error: 'Document still exists after deletion' };
+    }
     return { success: true };
   } catch (error: any) {
     const user = getCurrentUser();
@@ -268,6 +285,12 @@ export const deleteVerificationData = async (verificationId: string) => {
       verificationId,
       userId: user?.uid || 'unknown'
     });
+    
+    // If the document doesn't exist, consider it a successful deletion
+    if (error.code === 'not-found') {
+      return { success: true };
+    }
+    
     return { success: false, error: error.message };
   }
 };
@@ -280,19 +303,8 @@ export const updateVerificationData = async (verificationId: string, updates: Pa
       throw new Error('User not authenticated');
     }
 
-    // First, verify the user owns this document by querying it
-    const q = query(
-      collection(db, 'verifications'),
-      where('userId', '==', user.uid),
-      where('__name__', '==', verificationId)
-    );
-
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
-      return { success: false, error: 'Verification not found or access denied' };
-    }
-
-    // Now update the document
+    // Update the document directly
+    // Firestore security rules will handle the permission check
     await updateDoc(doc(db, 'verifications', verificationId), {
       ...updates,
       updatedAt: serverTimestamp(),
@@ -312,21 +324,23 @@ export const getVerificationById = async (verificationId: string) => {
       throw new Error('User not authenticated');
     }
 
-    const q = query(
-      collection(db, 'verifications'),
-      where('userId', '==', user.uid),
-      where('__name__', '==', verificationId)
-    );
+    // Get the document directly by ID
+    const docRef = doc(db, 'verifications', verificationId);
+    const docSnap = await getDoc(docRef);
 
-    const querySnapshot = await getDocs(q);
-    if (querySnapshot.empty) {
+    if (!docSnap.exists()) {
       return { success: false, error: 'Verification not found' };
     }
 
-    const doc = querySnapshot.docs[0];
-    const data = doc.data();
+    const data = docSnap.data();
+    
+    // Check if the user owns this document
+    if (data.userId !== user.uid) {
+      return { success: false, error: 'Access denied' };
+    }
+
     const verification: VerificationData = {
-      id: doc.id,
+      id: docSnap.id,
       ...data,
       timestamp: data.createdAt?.toDate() || new Date(),
     } as VerificationData;
