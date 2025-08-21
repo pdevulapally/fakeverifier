@@ -27,6 +27,14 @@ interface TokenSystemProps {
 
 
 export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }: TokenSystemProps) {
+  // Calculate next midnight for default daily reset
+  const getNextMidnight = () => {
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    tomorrow.setHours(0, 0, 0, 0)
+    return tomorrow
+  }
+
   const [tokenUsage, setTokenUsage] = useState<TokenUsage & { id: string }>({
     id: '',
     userId: '',
@@ -34,7 +42,9 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
     total: 50, // Free tier: 50 tokens per month
     resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     plan: "free",
-    lastUpdated: new Date()
+    lastUpdated: new Date(),
+    dailyUsed: 0,
+    dailyResetDate: getNextMidnight() // Reset at midnight
   })
   const [isLoading, setIsLoading] = useState(false)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -58,7 +68,9 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
           total: 50,
           resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
           plan: "free",
-          lastUpdated: new Date()
+          lastUpdated: new Date(),
+          dailyUsed: 0,
+          dailyResetDate: getNextMidnight()
         })
         return
       }
@@ -107,6 +119,33 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
           }
         }
         
+        // Ensure dailyResetDate is properly converted to Date object
+        if (data.dailyResetDate) {
+          if (typeof data.dailyResetDate === 'string') {
+            const dailyResetDate = new Date(data.dailyResetDate)
+            if (!isNaN(dailyResetDate.getTime())) {
+              data.dailyResetDate = dailyResetDate
+                         } else {
+               console.warn('Invalid dailyResetDate string:', data.dailyResetDate)
+               data.dailyResetDate = getNextMidnight()
+             }
+          } else if (data.dailyResetDate && typeof data.dailyResetDate === 'object' && 'toDate' in data.dailyResetDate) {
+            // Handle Firestore Timestamp
+            data.dailyResetDate = (data.dailyResetDate as any).toDate()
+                     } else if (!(data.dailyResetDate instanceof Date)) {
+             console.warn('Invalid dailyResetDate object:', data.dailyResetDate)
+             data.dailyResetDate = getNextMidnight()
+           }
+                 } else {
+           // Set default daily reset date if not present
+           data.dailyResetDate = getNextMidnight()
+         }
+        
+        // Ensure dailyUsed is set
+        if (data.dailyUsed === undefined || data.dailyUsed === null) {
+          data.dailyUsed = 0
+        }
+        
                  console.log('Token usage loaded:', data.used, '/', data.total)
          setTokenUsage(data)
       } else {
@@ -123,6 +162,20 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
   const getUsagePercentage = () => (tokenUsage.used / tokenUsage.total) * 100
   const isLowTokens = () => getRemainingTokens() <= 5
   const isOutOfTokens = () => getRemainingTokens() <= 0
+  
+  // Daily limit functions for free users
+  const getDailyRemainingTokens = () => {
+    if (tokenUsage.plan === "free") {
+      return 5 - (tokenUsage.dailyUsed || 0)
+    }
+    return null // No daily limit for paid plans
+  }
+  const isDailyLimitReached = () => {
+    if (tokenUsage.plan === "free") {
+      return (tokenUsage.dailyUsed || 0) >= 5
+    }
+    return false
+  }
 
   const formatResetDate = (date: Date | string) => {
     try {
@@ -160,13 +213,13 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
     const actualTokens = tokenUsage.total
     
     switch (tokenUsage.plan) {
-      case "free":
-        return {
-          name: "Free",
-          tokens: actualTokens,
-          price: "$0",
-          features: ["Basic verification", "Standard response time", "Community support"]
-        }
+             case "free":
+         return {
+           name: "Free",
+           tokens: actualTokens,
+           price: "$0",
+           features: ["Basic verification", "Standard response time", "Community support"]
+         }
       case "pro":
         return {
           name: "Pro",
@@ -238,12 +291,14 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
         </div>
 
         <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-600">Used this month</span>
-            <span className="font-medium">
-              {tokenUsage.used} / {tokenUsage.total} tokens
-            </span>
-          </div>
+                     <div className="flex items-center justify-between text-sm">
+             <span className="text-gray-600">
+               {tokenUsage.plan === "free" ? "Used this month (max 5/day)" : "Used this month"}
+             </span>
+             <span className="font-medium">
+               {tokenUsage.used} / {tokenUsage.total} tokens
+             </span>
+           </div>
 
           <Progress 
             value={getUsagePercentage()} 
@@ -260,7 +315,23 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
             <span>{formatResetDate(tokenUsage.resetDate)}</span>
           </div>
 
-          {isLowTokens() && !isOutOfTokens() && (
+                     {/* Show daily usage info for free users */}
+           {tokenUsage.plan === "free" && (
+             <div className="text-xs text-gray-500">
+               <span>Today: {tokenUsage.dailyUsed || 0}/5 tokens (from monthly allocation)</span>
+             </div>
+           )}
+
+                     {isDailyLimitReached() && (
+             <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md">
+               <Info className="w-4 h-4 text-red-600" />
+               <span className="text-sm text-red-800">
+                 Daily limit reached! You can use 5 tokens per day from your monthly allocation. Reset at midnight. <a href="/pricing" className="text-blue-600 hover:text-blue-800 underline font-medium">Upgrade to Pro</a> for unlimited daily usage.
+               </span>
+             </div>
+           )}
+
+          {isLowTokens() && !isOutOfTokens() && !isDailyLimitReached() && (
             <div className="flex items-center gap-2 p-2 bg-yellow-50 border border-yellow-200 rounded-md">
               <Info className="w-4 h-4 text-yellow-600" />
               <span className="text-sm text-yellow-800">

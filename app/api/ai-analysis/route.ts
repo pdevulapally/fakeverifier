@@ -136,11 +136,12 @@ export async function POST(request: NextRequest) {
     // Extract keywords from content for news search
     const keywords = extractKeywords(content);
     
-    // Fetch real-time news data from all four APIs
+    // Fetch real-time news data from all five APIs
     let newsData = [];
     let newsApiAiData = [];
     let finlightData = [];
     let nytData = [];
+    let skyNewsData = [];
     
     // Search for relevant news videos
     let videoData = [];
@@ -243,16 +244,41 @@ export async function POST(request: NextRequest) {
       console.log('NYT API error:', error);
     }
 
+    try {
+      // Fetch from Sky News RSS feed
+      const skyNewsResponse = await fetch(`/api/sky-news-rss?q=${encodeURIComponent(keywords.join(' '))}&limit=10`);
+      
+      if (skyNewsResponse.ok) {
+        const skyNewsResult = await skyNewsResponse.json();
+        skyNewsData = skyNewsResult.data || [];
+      }
+    } catch (error) {
+      console.log('Sky News RSS error:', error);
+    }
+
     // Determine if this is real-time news or older content
-    const isRealTimeNews = checkIfRealTimeNews(content, newsData, newsApiAiData, finlightData, nytData);
+    const isRealTimeNews = checkIfRealTimeNews(content, newsData, newsApiAiData, finlightData, nytData, skyNewsData);
     
     // Choose the appropriate model based on content type
     const modelToUse = isRealTimeNews ? "gpt-4o-search-preview" : "gpt-4o";
     
     console.log(`Using model: ${modelToUse} for ${isRealTimeNews ? 'real-time' : 'older'} news content`);
+    
+    // Determine which APIs to use based on content analysis
+    const apiSelection = determineApiSelection(content, isRealTimeNews, {
+      newsData,
+      newsApiAiData,
+      finlightData,
+      nytData,
+      skyNewsData
+    });
+    
+    console.log('API Selection:', apiSelection);
 
     // Enhanced system prompt for comprehensive verification
-    const systemPrompt = `You are an AI assistant specialized in comprehensive news verification and content credibility assessment. ${isRealTimeNews ? 'You have access to real-time search capabilities and can search for current information to verify claims.' : 'You will analyze content using provided news data from multiple sources including NewsAPI, NewsAPI.ai, Finlight, and New York Times.'}
+    const systemPrompt = `You are an AI assistant specialized in comprehensive news verification and content credibility assessment. ${isRealTimeNews ? 'You have access to real-time search capabilities and can search for current information to verify claims.' : `You will analyze content using provided news data from the following selected sources: ${apiSelection.selectedApis.join(', ')}.`}
+
+IMPORTANT: The system has intelligently selected the most relevant news sources for this verification based on the content type and timeliness. Focus your analysis on the provided sources and use them effectively for verification.
 
 IMPORTANT: You must be accurate and evidence-based in your verification. Classify content as "Real" if there is clear, verifiable evidence from reliable sources. For factual claims (like current political office holders, basic facts, etc.), be more direct. Only classify as "Questionable" when there is genuine uncertainty or controversy. Be fair and balanced - do not assume content is fake without clear evidence. When in doubt, err on the side of "Real" if there are credible sources supporting the claim.
 
@@ -322,30 +348,36 @@ Always provide a structured response that includes:
 
 IMPORTANT: In the EXPLANATION section, make key terms bold using **term** format, but do NOT wrap the entire verdict in ** symbols. For example:
 - "This content is **Fake** because..." (correct)
-- "**FAKE**" (incorrect - don't wrap the entire verdict)`;
+- "FAKE" (incorrect - don't wrap the entire verdict)`;
 
-    // Include news data from all four APIs in the user prompt
-    const newsContext = newsData.length > 0 
+    // Build context based on selected APIs
+    const newsContext = apiSelection.useNewsApi && newsData.length > 0 
       ? `\n\nCurrent news context from News API:\n${newsData.map((article: any, index: number) => 
           `${index + 1}. ${article.title} (${article.source.name}) - ${article.publishedAt}`
         ).join('\n')}`
       : '';
 
-    const newsApiAiContext = newsApiAiData.length > 0
+    const newsApiAiContext = apiSelection.useNewsApiAi && newsApiAiData.length > 0
       ? `\n\nAdditional news context from NewsAPI.ai:\n${newsApiAiData.map((article: any, index: number) => 
           `${index + 1}. ${article.title} (${article.source?.title || 'Unknown'}) - ${article.dateTime}`
         ).join('\n')}`
       : '';
 
-    const finlightContext = finlightData.length > 0
+    const finlightContext = apiSelection.useFinlight && finlightData.length > 0
       ? `\n\nAdditional news context from Finlight API:\n${finlightData.map((article: any, index: number) => 
           `${index + 1}. ${article.title || article.headline} (${article.source || 'Unknown'}) - ${article.publishedAt || article.date}`
         ).join('\n')}`
       : '';
 
-    const nytContext = nytData.length > 0
+    const nytContext = apiSelection.useNyt && nytData.length > 0
       ? `\n\nNew York Times Top Stories context:\n${nytData.map((article: any, index: number) => 
           `${index + 1}. ${article.title} (New York Times) - ${article.published_date}`
+        ).join('\n')}`
+      : '';
+
+    const skyNewsContext = apiSelection.useSkyNews && skyNewsData.length > 0
+      ? `\n\nSky News RSS context:\n${skyNewsData.map((article: any, index: number) => 
+          `${index + 1}. ${article.title} (Sky News) - ${article.publishedAt}`
         ).join('\n')}`
       : '';
 
@@ -358,7 +390,7 @@ IMPORTANT: In the EXPLANATION section, make key terms bold using **term** format
         }).join('\n')}`
       : '';
 
-    const userPrompt = `Analyze and verify this ${type} content for credibility and authenticity using ${isRealTimeNews ? 'real-time search capabilities and current news data' : 'provided news data from multiple sources including NewsAPI, NewsAPI.ai, Finlight, and New York Times'}. Also detect if the content appears to be AI-generated:
+    const userPrompt = `Analyze and verify this ${type} content for credibility and authenticity using ${isRealTimeNews ? 'real-time search capabilities and current news data' : 'provided news data from multiple sources including NewsAPI, NewsAPI.ai, Finlight, New York Times, and Sky News RSS'}. Also detect if the content appears to be AI-generated:
 
 "${content}"${urlAnalysis}${urlContent}
 
@@ -368,7 +400,7 @@ IMPORTANT: ${isRealTimeNews ? 'Use your search capabilities to find the most rel
 
 FORMATTING: Write clear, well-structured explanations. Use **bold** formatting for key terms like "Real", "Fake", "Questionable", etc., but do NOT wrap entire verdicts in ** symbols. Make the explanation easy to read and understand.
 
-Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sources and current context in your analysis. Cross-reference with all available ${isRealTimeNews ? 'search results' : 'news APIs'} and analyze for AI-generated content patterns.${isRealTimeNews ? '' : `${newsContext}${newsApiAiContext}${finlightContext}${nytContext}${videoContext}`}`;
+Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sources and current context in your analysis. Cross-reference with all available ${isRealTimeNews ? 'search results' : 'news APIs'} and analyze for AI-generated content patterns.${isRealTimeNews ? '' : `${newsContext}${newsApiAiContext}${finlightContext}${nytContext}${skyNewsContext}${videoContext}`}`;
     
     const completion = await openai.chat.completions.create({
       model: modelToUse,
@@ -453,9 +485,9 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
     // Extract sources from the response and combine with real-time news sources
     const extractedSources = extractSources(aiResponse);
     
-    // Prepare real-time news sources from all four APIs
+    // Prepare real-time news sources from selected APIs only
     const realTimeSources = [
-      ...newsData.map((article: any) => ({
+      ...(apiSelection.useNewsApi ? newsData.map((article: any) => ({
         title: article.title,
         source: article.source.name,
         url: article.url,
@@ -463,8 +495,8 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
         description: article.description,
         api: 'News API',
         relevance: calculateRelevance(article, content, keywords)
-      })),
-      ...newsApiAiData.map((article: any) => ({
+      })) : []),
+      ...(apiSelection.useNewsApiAi ? newsApiAiData.map((article: any) => ({
         title: article.title,
         source: article.source?.title || 'Unknown',
         url: article.url,
@@ -472,8 +504,8 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
         description: article.body,
         api: 'NewsAPI.ai',
         relevance: calculateRelevance(article, content, keywords)
-      })),
-      ...finlightData.map((article: any) => ({
+      })) : []),
+      ...(apiSelection.useFinlight ? finlightData.map((article: any) => ({
         title: article.title || article.headline,
         source: article.source || article.publisher || 'Unknown',
         url: article.url || article.link,
@@ -481,8 +513,8 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
         description: article.description || article.summary || article.content,
         api: 'Finlight',
         relevance: calculateRelevance(article, content, keywords)
-      })),
-      ...nytData.map((article: any) => ({
+      })) : []),
+      ...(apiSelection.useNyt ? nytData.map((article: any) => ({
         title: article.title,
         source: 'New York Times',
         url: article.url,
@@ -490,7 +522,16 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
         description: article.abstract,
         api: 'NYT Top Stories',
         relevance: calculateRelevance(article, content, keywords)
-      }))
+      })) : []),
+      ...(apiSelection.useSkyNews ? skyNewsData.map((article: any) => ({
+        title: article.title,
+        source: 'Sky News',
+        url: article.url,
+        publishedAt: article.publishedAt,
+        description: article.description,
+        api: 'Sky News RSS',
+        relevance: calculateRelevance(article, content, keywords)
+      })) : [])
     ];
 
     // Sort sources by relevance and select the most relevant ones
@@ -512,6 +553,10 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
       newsData: sortedSources, // Return only the most relevant sources
       videoData: videoData.sort((a, b) => (b.relevance || 0) - (a.relevance || 0)).slice(0, 3), // Return top 3 most relevant videos
       urlsAnalyzed: urls,
+      apiSelection: {
+        selectedApis: apiSelection.selectedApis,
+        reasoning: apiSelection.reasoning
+      },
       structuredData: {
         verdict,
         confidence,
@@ -965,7 +1010,7 @@ function getCuratedNewsVideos(keywords: string[], content: string): any[] {
 }
 
 // Helper function to check if content is real-time news
-function checkIfRealTimeNews(content: string, newsData: any[], newsApiAiData: any[], finlightData: any[], nytData: any[]): boolean {
+function checkIfRealTimeNews(content: string, newsData: any[], newsApiAiData: any[], finlightData: any[], nytData: any[], skyNewsData: any[]): boolean {
   // Check for real-time indicators in the content
   const realTimeKeywords = [
     'breaking', 'just in', 'latest', 'recently', 'today', 'yesterday', 'this week',
@@ -979,7 +1024,7 @@ function checkIfRealTimeNews(content: string, newsData: any[], newsApiAiData: an
   const now = new Date();
   const oneDayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
   
-  const hasRecentNewsData = [...newsData, ...newsApiAiData, ...finlightData, ...nytData].some(article => {
+  const hasRecentNewsData = [...newsData, ...newsApiAiData, ...finlightData, ...nytData, ...skyNewsData].some(article => {
     const articleDate = new Date(article.publishedAt || article.dateTime || article.published_date || article.date || now);
     return articleDate >= oneDayAgo;
   });
@@ -1015,4 +1060,122 @@ function extractSources(response: string): string[] {
     // Clean up the URL by removing trailing parentheses and brackets
     return url.replace(/[\)\]]+$/, '');
   }).filter(url => url.length > 0) || ["AI analysis based on available information"];
+}
+
+// Helper function to determine which APIs to use based on content analysis
+function determineApiSelection(content: string, isRealTimeNews: boolean, apiData: any) {
+  const contentLower = content.toLowerCase();
+  const selection = {
+    useNewsApi: false,
+    useNewsApiAi: false,
+    useFinlight: false,
+    useNyt: false,
+    useSkyNews: false,
+    selectedApis: [] as string[],
+    reasoning: [] as string[]
+  };
+
+  // Check for UK-specific content (Sky News is excellent for UK news)
+  const ukKeywords = ['uk', 'britain', 'england', 'scotland', 'wales', 'northern ireland', 'london', 'manchester', 'birmingham', 'leeds', 'liverpool', 'sheffield', 'glasgow', 'edinburgh', 'cardiff', 'belfast', 'parliament', 'westminster', 'tory', 'conservative', 'labour', 'liberal democrat', 'brexit', 'nhs', 'bbc', 'royal family', 'queen', 'king', 'prince', 'princess'];
+  const hasUkContent = ukKeywords.some(keyword => contentLower.includes(keyword));
+  
+  if (hasUkContent) {
+    selection.useSkyNews = true;
+    selection.selectedApis.push('Sky News RSS');
+    selection.reasoning.push('UK-specific content detected - Sky News RSS provides excellent UK coverage');
+  }
+
+  // Check for political content (NYT and Sky News are good for politics)
+  const politicalKeywords = ['trump', 'biden', 'election', 'president', 'congress', 'senate', 'democrat', 'republican', 'politics', 'political', 'campaign', 'vote', 'poll', 'democracy', 'government', 'administration', 'policy', 'legislation', 'bill', 'law'];
+  const hasPoliticalContent = politicalKeywords.some(keyword => contentLower.includes(keyword));
+  
+  if (hasPoliticalContent) {
+    if (!selection.useNyt) {
+      selection.useNyt = true;
+      selection.selectedApis.push('New York Times');
+      selection.reasoning.push('Political content detected - NYT provides comprehensive political coverage');
+    }
+    if (!selection.useSkyNews) {
+      selection.useSkyNews = true;
+      selection.selectedApis.push('Sky News RSS');
+      selection.reasoning.push('Political content detected - Sky News provides international political coverage');
+    }
+  }
+
+  // Check for business/financial content (Finlight and NewsAPI.ai are good for business)
+  const businessKeywords = ['stock', 'market', 'economy', 'business', 'finance', 'investment', 'company', 'corporate', 'earnings', 'revenue', 'profit', 'loss', 'trading', 'wall street', 'nasdaq', 'dow jones', 's&p 500', 'bitcoin', 'crypto', 'currency', 'bank', 'banking'];
+  const hasBusinessContent = businessKeywords.some(keyword => contentLower.includes(keyword));
+  
+  if (hasBusinessContent) {
+    selection.useFinlight = true;
+    selection.selectedApis.push('Finlight');
+    selection.reasoning.push('Business/financial content detected - Finlight specializes in financial news');
+    selection.useNewsApiAi = true;
+    selection.selectedApis.push('NewsAPI.ai');
+    selection.reasoning.push('Business content detected - NewsAPI.ai provides comprehensive business coverage');
+  }
+
+  // Check for technology content (NewsAPI.ai and Finlight are good for tech)
+  const techKeywords = ['ai', 'artificial intelligence', 'technology', 'tech', 'software', 'app', 'digital', 'computer', 'internet', 'social media', 'facebook', 'twitter', 'instagram', 'tiktok', 'google', 'apple', 'microsoft', 'amazon', 'tesla', 'spacex', 'startup', 'innovation', 'cybersecurity', 'hacking', 'data', 'privacy'];
+  const hasTechContent = techKeywords.some(keyword => contentLower.includes(keyword));
+  
+  if (hasTechContent) {
+    selection.useNewsApiAi = true;
+    selection.selectedApis.push('NewsAPI.ai');
+    selection.reasoning.push('Technology content detected - NewsAPI.ai provides comprehensive tech coverage');
+    selection.useFinlight = true;
+    selection.selectedApis.push('Finlight');
+    selection.reasoning.push('Technology content detected - Finlight provides tech and innovation news');
+  }
+
+  // Check for breaking news or real-time content
+  const breakingKeywords = ['breaking', 'just in', 'latest', 'recently', 'today', 'yesterday', 'this week', 'breaking news', 'live', 'developing', 'update', 'announcement', 'statement', 'urgent', 'emergency', 'crisis', 'disaster'];
+  const hasBreakingContent = breakingKeywords.some(keyword => contentLower.includes(keyword));
+  
+  if (hasBreakingContent || isRealTimeNews) {
+    // For breaking news, use all available APIs for comprehensive coverage
+    selection.useNewsApi = true;
+    selection.useNewsApiAi = true;
+    selection.useFinlight = true;
+    selection.useNyt = true;
+    selection.useSkyNews = true;
+    selection.selectedApis = ['News API', 'NewsAPI.ai', 'Finlight', 'New York Times', 'Sky News RSS'];
+    selection.reasoning.push('Breaking/real-time content detected - using all available sources for comprehensive coverage');
+  }
+
+  // If no specific content type detected, use a balanced selection
+  if (selection.selectedApis.length === 0) {
+    selection.useNewsApi = true;
+    selection.useNewsApiAi = true;
+    selection.useSkyNews = true;
+    selection.selectedApis = ['News API', 'NewsAPI.ai', 'Sky News RSS'];
+    selection.reasoning.push('General content - using balanced selection of news sources');
+  }
+
+  // Ensure we have at least some data from selected APIs
+  const hasDataFromSelectedApis = (
+    (selection.useNewsApi && apiData.newsData.length > 0) ||
+    (selection.useNewsApiAi && apiData.newsApiAiData.length > 0) ||
+    (selection.useFinlight && apiData.finlightData.length > 0) ||
+    (selection.useNyt && apiData.nytData.length > 0) ||
+    (selection.useSkyNews && apiData.skyNewsData.length > 0)
+  );
+
+  // If no data from selected APIs, fall back to all available APIs
+  if (!hasDataFromSelectedApis) {
+    selection.useNewsApi = apiData.newsData.length > 0;
+    selection.useNewsApiAi = apiData.newsApiAiData.length > 0;
+    selection.useFinlight = apiData.finlightData.length > 0;
+    selection.useNyt = apiData.nytData.length > 0;
+    selection.useSkyNews = apiData.skyNewsData.length > 0;
+    selection.selectedApis = [];
+    if (selection.useNewsApi) selection.selectedApis.push('News API');
+    if (selection.useNewsApiAi) selection.selectedApis.push('NewsAPI.ai');
+    if (selection.useFinlight) selection.selectedApis.push('Finlight');
+    if (selection.useNyt) selection.selectedApis.push('New York Times');
+    if (selection.useSkyNews) selection.selectedApis.push('Sky News RSS');
+    selection.reasoning.push('Fallback to available data sources');
+  }
+
+  return selection;
 }

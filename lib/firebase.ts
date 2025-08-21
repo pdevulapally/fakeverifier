@@ -360,6 +360,9 @@ export interface TokenUsage {
   resetDate: Date
   plan: "free" | "pro" | "enterprise"
   lastUpdated: Date
+  // Daily tracking for free users
+  dailyUsed: number
+  dailyResetDate: Date
 }
 
 export const getUserTokenUsage = async () => {
@@ -378,13 +381,21 @@ export const getUserTokenUsage = async () => {
     
     if (querySnapshot.empty) {
       // Create default token usage for new user
+      const now = new Date()
+      // Calculate next midnight for daily reset
+      const tomorrow = new Date(now)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(0, 0, 0, 0)
+      
       const defaultUsage: TokenUsage = {
         userId: user.uid,
         used: 0,
-        total: 50, // Free tier
-        resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+        total: 50, // Free tier: 50 tokens per month
+        resetDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         plan: "free",
-        lastUpdated: new Date()
+        lastUpdated: now,
+        dailyUsed: 0,
+        dailyResetDate: tomorrow // Reset at midnight
       }
       
       const docRef = await addDoc(collection(db, 'tokenUsage'), defaultUsage)
@@ -398,17 +409,45 @@ export const getUserTokenUsage = async () => {
     const tokenUsage: TokenUsage = {
       ...data,
       resetDate: data.resetDate?.toDate ? data.resetDate.toDate() : new Date(data.resetDate),
-      lastUpdated: data.lastUpdated?.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated)
+      lastUpdated: data.lastUpdated?.toDate ? data.lastUpdated.toDate() : new Date(data.lastUpdated),
+             dailyResetDate: data.dailyResetDate?.toDate ? data.dailyResetDate.toDate() : new Date(data.dailyResetDate || (() => {
+         const tomorrow = new Date()
+         tomorrow.setDate(tomorrow.getDate() + 1)
+         tomorrow.setHours(0, 0, 0, 0)
+         return tomorrow.getTime()
+       })()),
+      dailyUsed: data.dailyUsed || 0
     } as TokenUsage
     
-    // Check if reset date has passed
-    if (tokenUsage.resetDate < new Date()) {
-      // Reset tokens for new month
+    const now = new Date()
+    
+    // Check if monthly reset date has passed
+    if (tokenUsage.resetDate < now) {
+      // Reset monthly tokens
       const updatedUsage = {
         ...tokenUsage,
         used: 0,
-        resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-        lastUpdated: new Date()
+        resetDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
+        lastUpdated: now
+      }
+      
+      await updateDoc(doc.ref, updatedUsage)
+      return { success: true, data: { id: doc.id, ...updatedUsage } }
+    }
+    
+    // Check if daily reset date has passed (for free users) - reset at midnight
+    if (tokenUsage.plan === "free" && tokenUsage.dailyResetDate < now) {
+      // Calculate next midnight
+      const tomorrow = new Date(now)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(0, 0, 0, 0)
+      
+      // Reset daily tokens
+      const updatedUsage = {
+        ...tokenUsage,
+        dailyUsed: 0,
+        dailyResetDate: tomorrow,
+        lastUpdated: now
       }
       
       await updateDoc(doc.ref, updatedUsage)
@@ -424,7 +463,6 @@ export const getUserTokenUsage = async () => {
 
 export const consumeTokens = async (amount: number = 1) => {
   try {
-    console.log('Consuming tokens:', amount)
     const user = getCurrentUser()
     if (!user) {
       throw new Error('User not authenticated')
@@ -436,21 +474,25 @@ export const consumeTokens = async (amount: number = 1) => {
     }
 
     const usage = usageResult.data as TokenUsage & { id: string }
-    console.log('Current token usage:', usage.used, '/', usage.total)
     
+    // Check monthly limit
     if (usage.used + amount > usage.total) {
-      throw new Error('Insufficient tokens')
+      throw new Error('Monthly token limit exceeded')
+    }
+    
+    // Check daily limit for free users (5 tokens per day, consuming from monthly allocation)
+    if (usage.plan === "free" && usage.dailyUsed + amount > 5) {
+      throw new Error('Daily limit reached! You can use 5 tokens per day from your monthly allocation. Reset at midnight.')
     }
 
     const updatedUsage = {
       ...usage,
-      used: usage.used + amount,
+      used: usage.used + amount, // This consumes from monthly tokens
+      dailyUsed: usage.plan === "free" ? usage.dailyUsed + amount : usage.dailyUsed, // Track daily usage
       lastUpdated: new Date()
     }
 
-    console.log('Updating token usage to:', updatedUsage.used, '/', updatedUsage.total)
     await updateDoc(doc(db, 'tokenUsage', usage.id), updatedUsage)
-    console.log('Token consumption successful')
     return { success: true, data: updatedUsage }
   } catch (error: any) {
     console.error('Error consuming tokens:', error)
@@ -609,13 +651,21 @@ export const updateUserPlanManually = async (userId: string, plan: "free" | "pro
     
     if (querySnapshot.empty) {
       // Create new token usage document if it doesn't exist
+      const now = new Date()
+      // Calculate next midnight for daily reset
+      const tomorrow = new Date(now)
+      tomorrow.setDate(tomorrow.getDate() + 1)
+      tomorrow.setHours(0, 0, 0, 0)
+      
       const defaultUsage: TokenUsage = {
         userId: userId,
         used: 0,
         total: newTotal,
-        resetDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        resetDate: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000),
         plan: plan,
-        lastUpdated: new Date()
+        lastUpdated: now,
+        dailyUsed: 0,
+        dailyResetDate: tomorrow
       }
       
       const docRef = await addDoc(collection(db, 'tokenUsage'), defaultUsage)
