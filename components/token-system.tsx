@@ -273,7 +273,7 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
             <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md">
               <Info className="w-4 h-4 text-red-600" />
               <span className="text-sm text-red-800">
-                Out of tokens! Upgrade to continue verifying.
+                Out of tokens! <a href="/pricing" className="text-blue-600 hover:text-blue-800 underline font-medium">Upgrade</a> to continue verifying.
               </span>
             </div>
           )}
