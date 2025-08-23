@@ -353,22 +353,27 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
 
 
 
-             {/* Quick Actions */}
-       <div className="grid grid-cols-2 gap-2">
-         <Button variant="outline" size="sm" className="text-xs">
-           <CreditCard className="w-4 h-4 mr-1" />
-           Billing
-         </Button>
-         <Button 
-           variant="outline" 
-           size="sm" 
-           className="text-xs"
-           onClick={() => window.location.href = '/usage'}
-         >
-           <TrendingUp className="w-4 h-4 mr-1" />
-           Usage History
-         </Button>
-       </div>
+        {/* Quick Actions */}
+        <div className="grid grid-cols-2 gap-2">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs"
+            onClick={() => window.location.href = '/billing'}
+          >
+            <CreditCard className="w-4 h-4 mr-1" />
+            Billing
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="text-xs"
+            onClick={() => window.location.href = '/usage'}
+          >
+            <TrendingUp className="w-4 h-4 mr-1" />
+            Usage History
+          </Button>
+        </div>
     </div>
   )
 }
