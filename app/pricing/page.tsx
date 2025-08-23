@@ -766,7 +766,7 @@ export default function PricingPage() {
                     </div>
                     <div>
                       <div className="font-medium">Email</div>
-                      <div className="text-sm text-muted-foreground">sales@fakeverifier.com</div>
+                      <div className="text-sm text-muted-foreground">PreethamDevulapally@gmail.com</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
@@ -775,7 +775,7 @@ export default function PricingPage() {
                     </div>
                     <div>
                       <div className="font-medium">Phone</div>
-                      <div className="text-sm text-muted-foreground">+1 (555) 123-4567</div>
+                      <div className="text-sm text-muted-foreground">+44 7493412454</div>
                     </div>
                   </div>
                 </div>
