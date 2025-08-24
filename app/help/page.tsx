@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Card } from "@/components/ui/card"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
@@ -21,7 +21,13 @@ import {
   CheckCircle,
   ChevronDown,
   ChevronUp,
-  Send
+  Send,
+  Star,
+  ExternalLink,
+  Bot,
+  FileText,
+  Settings,
+  CreditCard
 } from "lucide-react"
 import Link from "next/link"
 
@@ -29,13 +35,15 @@ interface FAQ {
   question: string
   answer: string
   category: string
+  popular?: boolean
 }
 
 const faqs: FAQ[] = [
   {
     question: "How does FakeVerifier work?",
-    answer: "FakeVerifier uses advanced AI (GPT-4o) combined with real-time news search across multiple APIs to analyze content credibility. It cross-references your input with verified news sources, checks for inconsistencies, and provides a confidence score with detailed reasoning.",
-    category: "general"
+     answer: "FakeVerifier uses advanced AI (GPT-4o) combined with real-time news search to analyze content credibility. It cross-references your input with verified news sources, checks for inconsistencies, and provides a confidence score with detailed reasoning.",
+     category: "general",
+     popular: true
   },
   {
     question: "What types of content can I verify?",
@@ -45,7 +53,8 @@ const faqs: FAQ[] = [
   {
     question: "How accurate are the verification results?",
     answer: "Our AI achieves high accuracy by combining multiple verification methods: real-time news search, source credibility analysis, fact-checking against known databases, and pattern recognition for AI-generated content. Results include confidence scores and detailed explanations.",
-    category: "accuracy"
+    category: "accuracy",
+    popular: true
   },
   {
     question: "What do the different verdicts mean?",
@@ -74,12 +83,12 @@ const faqs: FAQ[] = [
   },
   {
     question: "How can I contact support?",
-    answer: "You can reach our support team through email at support@fakeverifier.com, use the contact form on this page, or join our community Discord for real-time help. We typically respond within 24 hours.",
+    answer: "You can reach our support team through email at support@fakeverifier.com, use the contact form on this page, or call us directly. We typically respond within 24 hours.",
     category: "support"
   },
   {
     question: "What news sources does FakeVerifier use?",
-    answer: "We integrate with multiple news APIs including News API, NewsAPI.ai, Finlight, and NYT Top Stories. This ensures comprehensive coverage and reduces bias by checking against diverse sources.",
+     answer: "We integrate with multiple verified news sources to ensure comprehensive coverage and reduce bias by checking against diverse sources.",
     category: "general"
   }
 ]
@@ -96,13 +105,13 @@ export default function HelpPage() {
   })
 
   const categories = [
-    { id: "all", name: "All Questions", icon: HelpCircle },
-    { id: "general", name: "General", icon: Globe },
-    { id: "accuracy", name: "Accuracy", icon: CheckCircle },
-    { id: "usage", name: "Usage", icon: Zap },
-    { id: "billing", name: "Billing", icon: Shield },
-    { id: "privacy", name: "Privacy", icon: Shield },
-    { id: "support", name: "Support", icon: MessageCircle }
+    { id: "all", name: "All Questions", icon: HelpCircle, count: faqs.length },
+    { id: "general", name: "General", icon: Globe, count: faqs.filter(f => f.category === "general").length },
+    { id: "accuracy", name: "Accuracy", icon: CheckCircle, count: faqs.filter(f => f.category === "accuracy").length },
+    { id: "usage", name: "Usage", icon: Zap, count: faqs.filter(f => f.category === "usage").length },
+    { id: "billing", name: "Billing", icon: CreditCard, count: faqs.filter(f => f.category === "billing").length },
+    { id: "privacy", name: "Privacy", icon: Shield, count: faqs.filter(f => f.category === "privacy").length },
+    { id: "support", name: "Support", icon: MessageCircle, count: faqs.filter(f => f.category === "support").length }
   ]
 
   const filteredFAQs = faqs.filter(faq => {
@@ -123,251 +132,331 @@ export default function HelpPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+       <div className="bg-white border-b border-gray-200">
+         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between py-4 sm:h-16 gap-4 sm:gap-0">
             <div className="flex items-center gap-4">
               <Link href="/verify">
-                <Button variant="ghost" size="sm">
+                 <Button variant="ghost" size="sm" className="hover:bg-blue-50 text-blue-600">
                   <ArrowLeft className="w-4 h-4 mr-2" />
-                  Back to Verify
+                   <span className="hidden sm:inline">Back to Verify</span>
+                   <span className="sm:hidden">Back</span>
                 </Button>
               </Link>
-              <div>
-                <h1 className="text-xl font-semibold text-gray-900">Help & Support</h1>
-                <p className="text-sm text-gray-500">Get help and find answers to your questions</p>
+               <div className="h-6 w-px bg-gray-300 hidden sm:block" />
+               <div className="min-w-0">
+                 <h1 className="text-lg sm:text-xl font-bold text-gray-900 truncate">Help & Support</h1>
+                 <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Get help and find answers to your questions</p>
+               </div>
+             </div>
+             <div className="flex items-center gap-2 self-end sm:self-auto">
+               <Badge className="bg-green-100 text-green-800 border-green-200 text-xs">
+                 <div className="w-2 h-2 bg-green-500 rounded-full mr-2" />
+                 <span className="hidden sm:inline">All systems operational</span>
+                 <span className="sm:hidden">Operational</span>
+               </Badge>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-          {/* Main Content */}
-          <div className="xl:col-span-2 space-y-6">
-            {/* Search */}
-            <Card className="p-6">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          <div className="text-center max-w-3xl mx-auto">
+            <h2 className="text-4xl font-bold mb-4">How can we help you?</h2>
+            <p className="text-xl text-blue-100 mb-8">Find answers to common questions or get in touch with our support team.</p>
+            
+            <div className="relative max-w-2xl mx-auto">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
                 <Input
-                  placeholder="Search for help topics..."
+                placeholder="Search for help topics, features, or troubleshooting..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
+                className="pl-12 pr-4 py-4 text-lg bg-white/10 backdrop-blur-sm border-white/20 text-white placeholder:text-blue-200 focus:bg-white/20 focus:border-white/40"
                 />
               </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-6 text-center">
+              <BookOpen className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="font-semibold text-lg mb-2">Documentation</h3>
+              <p className="text-gray-600 text-sm mb-4">Complete guides and tutorials</p>
+              <Button variant="outline" size="sm" onClick={() => window.open('https://docs.fakeverifier.com', '_blank')}>
+                View Docs
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-6 text-center">
+              <Users className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="font-semibold text-lg mb-2">Community</h3>
+              <p className="text-gray-600 text-sm mb-4">Connect with other users</p>
+              <Button variant="outline" size="sm" onClick={() => window.open('https://community.fakeverifier.com', '_blank')}>
+                Join Forum
+              </Button>
+            </CardContent>
             </Card>
 
-            {/* Categories */}
-            <Card className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Browse by Category</h2>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2">
+          <Card className="hover:shadow-md transition-shadow cursor-pointer">
+            <CardContent className="p-6 text-center">
+              <Shield className="w-12 h-12 text-blue-600 mx-auto mb-4" />
+              <h3 className="font-semibold text-lg mb-2">System Status</h3>
+              <p className="text-gray-600 text-sm mb-4">Check service health</p>
+              <Button variant="outline" size="sm" onClick={() => window.open('https://status.fakeverifier.com', '_blank')}>
+                Check Status
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Categories and FAQs */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+          {/* Categories Sidebar */}
+          <div className="lg:col-span-1">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-blue-600" />
+                  Categories
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4">
+                <div className="space-y-2">
                 {categories.map((category) => {
                   const Icon = category.icon
+                    const isSelected = selectedCategory === category.id
                   return (
-                    <Button
+                      <button
                       key={category.id}
-                      variant={selectedCategory === category.id ? "default" : "outline"}
-                      size="sm"
                       onClick={() => setSelectedCategory(category.id)}
-                      className="justify-start"
-                    >
-                      <Icon className="w-4 h-4 mr-2" />
-                      {category.name}
-                    </Button>
+                        className={`w-full text-left p-3 rounded-lg flex items-center gap-3 transition-colors ${
+                          isSelected 
+                            ? "bg-blue-50 text-blue-700 border border-blue-200" 
+                            : "hover:bg-gray-50 text-gray-700"
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="font-medium">{category.name}</span>
+                        <Badge variant="secondary" className="ml-auto text-xs">
+                          {category.count}
+                        </Badge>
+                      </button>
                   )
                 })}
               </div>
+              </CardContent>
             </Card>
 
-            {/* FAQs */}
-            <Card className="p-6">
-              <h2 className="text-lg font-semibold mb-4">Frequently Asked Questions</h2>
-              <div className="space-y-4 max-h-96 overflow-y-auto">
+            {/* Contact Info */}
+            <Card className="mt-6">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="w-5 h-5 text-blue-600" />
+                  Contact Support
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-4 space-y-4">
+                <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                  <Mail className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium">Email</p>
+                    <p className="text-xs text-gray-600">support@fakeverifier.com</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50">
+                  <Phone className="w-4 h-4 text-blue-600" />
+                  <div>
+                    <p className="text-sm font-medium">Phone</p>
+                    <p className="text-xs text-gray-600">+1 (555) 123-4567</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* FAQs Main Content */}
+          <div className="lg:col-span-3">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <HelpCircle className="w-5 h-5 text-blue-600" />
+                  Frequently Asked Questions
+                  {filteredFAQs.length > 0 && (
+                    <Badge className="ml-2 bg-blue-100 text-blue-800">
+                      {filteredFAQs.length} results
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
                 {filteredFAQs.length === 0 ? (
-                  <div className="text-center py-8">
-                    <HelpCircle className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                    <p className="text-gray-500">No questions found matching your search.</p>
+                  <div className="text-center py-12">
+                    <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-gray-900 mb-2">No questions found</h3>
+                    <p className="text-gray-600">Try adjusting your search terms or browse by category.</p>
                   </div>
                 ) : (
-                  filteredFAQs.map((faq, index) => (
-                    <div key={index} className="border rounded-lg">
+                  <div className="space-y-4">
+                    {filteredFAQs.map((faq, index) => (
+                      <div key={index} className="border border-gray-200 rounded-lg overflow-hidden">
                       <button
-                        className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50"
+                          className="w-full p-4 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
                         onClick={() => setExpandedFAQ(expandedFAQ === index ? null : index)}
                       >
-                        <span className="font-medium">{faq.question}</span>
+                          <div className="flex items-start gap-3">
+                            {faq.popular && (
+                              <Star className="w-4 h-4 text-yellow-500 flex-shrink-0 mt-0.5" />
+                            )}
+                            <div>
+                              <span className="font-medium text-gray-900">{faq.question}</span>
+                              {faq.popular && (
+                                <Badge className="ml-2 bg-yellow-100 text-yellow-800">
+                                  Popular
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline" className="text-xs">
+                              {faq.category}
+                            </Badge>
                         {expandedFAQ === index ? (
                           <ChevronUp className="w-4 h-4 text-gray-500" />
                         ) : (
                           <ChevronDown className="w-4 h-4 text-gray-500" />
                         )}
+                          </div>
                       </button>
                       {expandedFAQ === index && (
                         <div className="px-4 pb-4">
-                          <p className="text-gray-600 whitespace-pre-line">{faq.answer}</p>
+                            <div className="pt-3 border-t border-gray-200">
+                              <p className="text-gray-700 whitespace-pre-line leading-relaxed">{faq.answer}</p>
+                            </div>
                         </div>
                       )}
                     </div>
-                  ))
+                    ))}
+                  </div>
                 )}
-              </div>
+              </CardContent>
             </Card>
           </div>
-
-          {/* Sidebar */}
-          <div className="space-y-6 order-first xl:order-last">
-            {/* Quick Actions */}
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start h-auto p-3 flex-col items-start"
-                  onClick={() => window.open('https://docs.fakeverifier.com', '_blank')}
-                >
-                  <BookOpen className="w-5 h-5 mb-2 text-blue-600" />
-                  <div className="text-left">
-                    <div className="font-medium text-sm">Documentation</div>
-                    <div className="text-xs text-gray-500 mt-1">Complete guides & tutorials</div>
-                  </div>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start h-auto p-3 flex-col items-start"
-                  onClick={() => window.open('https://community.fakeverifier.com', '_blank')}
-                >
-                  <Users className="w-5 h-5 mb-2 text-green-600" />
-                  <div className="text-left">
-                    <div className="font-medium text-sm">Community Forum</div>
-                    <div className="text-xs text-gray-500 mt-1">Connect with users</div>
-                  </div>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start h-auto p-3 flex-col items-start"
-                  onClick={() => window.open('https://discord.gg/fakeverifier', '_blank')}
-                >
-                  <MessageCircle className="w-5 h-5 mb-2 text-purple-600" />
-                  <div className="text-left">
-                    <div className="font-medium text-sm">Discord Server</div>
-                    <div className="text-xs text-gray-500 mt-1">Real-time support</div>
-                  </div>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start h-auto p-3 flex-col items-start"
-                  onClick={() => window.open('https://status.fakeverifier.com', '_blank')}
-                >
-                  <Shield className="w-5 h-5 mb-2 text-orange-600" />
-                  <div className="text-left">
-                    <div className="font-medium text-sm">System Status</div>
-                    <div className="text-xs text-gray-500 mt-1">Check service health</div>
-                  </div>
-                </Button>
               </div>
-            </Card>
 
-            {/* Contact Information */}
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">Contact Us</h3>
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <Mail className="w-4 h-4 text-blue-600" />
+                 {/* Contact Form Section */}
+         <div className="mt-12">
+           <div className="max-w-4xl mx-auto">
+             <Card className="shadow-lg border-gray-200">
+               <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                 <CardTitle className="flex items-center gap-2">
+                   <Send className="w-5 h-5" />
+                   Send us a Message
+                 </CardTitle>
+               </CardHeader>
+                               <CardContent className="p-8">
+                  <form onSubmit={handleContactSubmit} className="space-y-6">
+                    <div className="space-y-4">
                   <div>
-                    <p className="text-sm font-medium">Email Support</p>
-                    <p className="text-xs text-gray-500">support@fakeverifier.com</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Users className="w-4 h-4 text-purple-600" />
-                  <div>
-                    <p className="text-sm font-medium">Discord Community</p>
-                    <p className="text-xs text-gray-500">Join our community</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  <Phone className="w-4 h-4 text-green-600" />
-                  <div>
-                    <p className="text-sm font-medium">Phone Support</p>
-                    <p className="text-xs text-gray-500">+1 (555) 123-4567</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-
-            {/* Contact Form */}
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">Send us a Message</h3>
-              <form onSubmit={handleContactSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium">Name</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">Name</label>
                     <Input
                       value={contactForm.name}
                       onChange={(e) => setContactForm(prev => ({ ...prev, name: e.target.value }))}
                       required
+                          className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="Enter your name"
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium">Email</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">Email</label>
                     <Input
                       type="email"
                       value={contactForm.email}
                       onChange={(e) => setContactForm(prev => ({ ...prev, email: e.target.value }))}
                       required
+                          className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="Enter your email"
                     />
-                  </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Subject</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">Subject</label>
                   <Input
                     value={contactForm.subject}
                     onChange={(e) => setContactForm(prev => ({ ...prev, subject: e.target.value }))}
                     required
+                          className="border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                          placeholder="Enter subject"
                   />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">Message</label>
+                        <label className="text-sm font-medium text-gray-700 mb-2 block">Message</label>
                   <Textarea
                     value={contactForm.message}
                     onChange={(e) => setContactForm(prev => ({ ...prev, message: e.target.value }))}
-                    rows={4}
+                          rows={6}
                     required
+                          className="border-gray-200 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                          placeholder="Enter your message here..."
                   />
                 </div>
-                <Button type="submit" className="w-full">
+                    </div>
+                                         <div className="flex justify-end pt-4">
+                       <Button 
+                         type="submit" 
+                         className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white px-8 py-3 text-base font-medium shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                       >
                   <Send className="w-4 h-4 mr-2" />
                   Send Message
                 </Button>
+                     </div>
               </form>
+                </CardContent>
             </Card>
+           </div>
+         </div>
 
             {/* System Status */}
-            <Card className="p-6">
-              <h3 className="font-semibold mb-4">System Status</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">AI Verification</span>
-                  <Badge className="bg-green-100 text-green-800">Operational</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">News APIs</span>
-                  <Badge className="bg-green-100 text-green-800">Operational</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">File Upload</span>
-                  <Badge className="bg-green-100 text-green-800">Operational</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm">User Authentication</span>
-                  <Badge className="bg-green-100 text-green-800">Operational</Badge>
+        <div className="mt-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Shield className="w-5 h-5 text-blue-600" />
+                System Status
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                 {[
+                   { name: "AI Verification", status: "Operational", icon: Bot },
+                   { name: "News Sources", status: "Operational", icon: Globe },
+                   { name: "File Upload", status: "Operational", icon: FileText },
+                   { name: "User Authentication", status: "Operational", icon: Settings }
+                 ].map((service) => {
+                  const Icon = service.icon
+                  return (
+                    <div key={service.name} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
+                      <Icon className="w-4 h-4 text-gray-600" />
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">{service.name}</p>
+                        <Badge className="bg-green-100 text-green-800 text-xs">
+                          <div className="w-1.5 h-1.5 bg-green-500 rounded-full mr-1" />
+                          {service.status}
+                        </Badge>
                 </div>
               </div>
+                  )
+                })}
+              </div>
+            </CardContent>
             </Card>
-          </div>
         </div>
       </div>
     </div>
