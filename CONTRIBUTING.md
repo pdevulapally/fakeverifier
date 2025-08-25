@@ -87,7 +87,7 @@ NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 
 # OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key
+OPENAI_API_KEY=sk-your-openai-api-key-here
 
 # News APIs
 NEWS_API_KEY=your_news_api_key
@@ -102,7 +102,7 @@ STRIPE_WEBHOOK_SECRET=your_webhook_secret
 
 # Next.js Configuration
 NEXTAUTH_SECRET=your_nextauth_secret
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=https://your-app-domain.com
 ```
 
 ### 4. Start Development Server
@@ -114,7 +114,7 @@ npm run dev
 pnpm dev
 ```
 
-The application will be available at `http://localhost:3000`
+The application will be available at your configured domain
 
 ## 📁 Project Structure
 

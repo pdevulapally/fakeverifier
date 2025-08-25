@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge"
 import { Bot, User, Clock, Sparkles } from "lucide-react"
 import { VerificationResultCard } from "./verification-result-card"
 import { EnhancedChatInput } from "./enhanced-chat-input"
+
 import { consumeTokens, getCurrentUser } from "@/lib/firebase"
 import { toast } from "sonner"
 
@@ -106,6 +107,7 @@ interface VerificationHistory {
   analysis?: any
   urlsAnalyzed?: string[]
   detectedContent?: any
+  messages?: Message[]
 }
 
 interface EnhancedChatInterfaceProps {
@@ -120,10 +122,11 @@ interface EnhancedChatInterfaceProps {
     urlsAnalyzed?: string[]
     detectedContent?: any
   }) => void
+  onMessagesUpdate?: (messages: Message[]) => void
 }
 
 export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>(
-  ({ onVerificationComplete }, ref) => {
+  ({ onVerificationComplete, onMessagesUpdate }, ref) => {
     // Initialize messages from localStorage or default
     const getInitialMessages = (): Message[] => {
       if (typeof window !== 'undefined') {
@@ -280,9 +283,26 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
            }
 
                                                                          // Set the full conversation history
-              const newMessages = [welcomeMessage, userMessage, assistantMessage]
-              messagesRef.current = newMessages
-              setMessages(newMessages)
+           let newMessages = [welcomeMessage, userMessage, assistantMessage]
+           
+           // If this is a shared verification with additional messages, add them
+           if (item.messages && Array.isArray(item.messages) && item.messages.length > 0) {
+             // Convert shared messages to the correct format
+             const sharedMessages = item.messages.map((msg: any, index: number) => ({
+               id: `shared-${index}-${Date.now()}`,
+               type: msg.type || 'assistant',
+               content: msg.content || '',
+               timestamp: msg.timestamp ? new Date(msg.timestamp) : new Date(Date.now() + index * 1000),
+               analysis: msg.analysis,
+               aiAnalysis: msg.aiAnalysis
+             }))
+             
+             // Add shared messages after the initial assistant response
+             newMessages = [...newMessages, ...sharedMessages]
+           }
+           
+           messagesRef.current = newMessages
+           setMessages(newMessages)
           } catch (error) {
             // Handle error silently
           }
@@ -305,7 +325,11 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
       if (typeof window !== 'undefined') {
         localStorage.setItem('fakeverifier-messages', JSON.stringify(messages))
       }
-    }, [messages])
+      // Notify parent component about messages update
+      if (onMessagesUpdate) {
+        onMessagesUpdate(messages)
+      }
+    }, [messages, onMessagesUpdate])
 
     const handleSendMessage = async (message: string, files: File[], detectedContent: any) => {
       if ((!message.trim() && files.length === 0) || isLoading) return
@@ -599,11 +623,13 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
       }
     }
 
-  return (
+    return (
     <div className="w-full h-full flex flex-col">
       <Card className="flex-1 flex flex-col min-h-0">
-                 {/* Chat Messages */}
-                   <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 min-h-0">
+
+        
+        {/* Chat Messages */}
+        <div className="flex-1 overflow-y-auto p-2 sm:p-3 md:p-6 space-y-3 sm:space-y-4 md:space-y-6 min-h-0">
            {messages.map((message) => (
                         <div
               key={message.id}

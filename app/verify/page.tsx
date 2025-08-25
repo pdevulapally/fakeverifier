@@ -4,6 +4,7 @@ import { useState, useRef, useEffect } from "react"
 import { EnhancedChatInterface } from "@/components/enhanced-chat-interface"
 import { TokenSystem } from "@/components/token-system"
 import { ShareButton } from "@/components/share-button"
+import { ChatShareButton } from "@/components/chat-share-button"
 import { SidebarProvider, SidebarInset, SidebarTrigger, Sidebar, SidebarHeader, SidebarContent, SidebarGroup, SidebarGroupLabel, SidebarGroupContent, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarSeparator, SidebarFooter, SidebarRail } from "@/components/ui/sidebar"
 import { Separator } from "@/components/ui/separator"
 import {
@@ -51,6 +52,7 @@ export default function VerifyPage() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [tokenRefreshTrigger, setTokenRefreshTrigger] = useState(0)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [currentMessages, setCurrentMessages] = useState<any[]>([])
   const chatInterfaceRef = useRef<any>(null)
 
   // Load verification history from Firebase on component mount
@@ -73,12 +75,54 @@ export default function VerifyPage() {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const loadId = urlParams.get('load')
+    const isShared = urlParams.get('shared')
     
     if (loadId && verificationHistory.length > 0) {
       const item = verificationHistory.find(h => h.id === loadId)
       if (item && chatInterfaceRef.current) {
         chatInterfaceRef.current.loadVerification(item)
         // Clear the URL parameter
+        window.history.replaceState({}, '', '/verify')
+      }
+    }
+    
+    // Handle shared verification data
+    if (isShared === 'true') {
+      try {
+        const sharedDataStr = localStorage.getItem('sharedVerificationData')
+        if (sharedDataStr) {
+          const sharedData = JSON.parse(sharedDataStr)
+          
+          // Create a verification object from shared data
+          const sharedVerification = {
+            id: `shared-${sharedData.shareId}`,
+            title: sharedData.verificationData?.title || 'Shared Verification',
+            verdict: sharedData.verificationData?.verdict || 'unknown',
+            score: sharedData.verificationData?.score || 0,
+            timestamp: new Date(sharedData.verificationData?.timestamp || Date.now()),
+            content: sharedData.verificationData?.content || '',
+            aiAnalysis: sharedData.verificationData?.aiAnalysis,
+            analysis: sharedData.verificationData?.analysis,
+            urlsAnalyzed: sharedData.verificationData?.urlsAnalyzed,
+            detectedContent: sharedData.verificationData?.detectedContent,
+            messages: sharedData.messages || [],
+            isShared: true
+          }
+          
+          // Load the shared verification into the chat interface
+          if (chatInterfaceRef.current) {
+            chatInterfaceRef.current.loadVerification(sharedVerification)
+          }
+          
+          // Clear the shared data from localStorage
+          localStorage.removeItem('sharedVerificationData')
+          
+          // Clear the URL parameter
+          window.history.replaceState({}, '', '/verify')
+        }
+      } catch (error) {
+        console.error('Error loading shared verification:', error)
+        // Clear the URL parameter even if there's an error
         window.history.replaceState({}, '', '/verify')
       }
     }
@@ -214,6 +258,10 @@ export default function VerifyPage() {
     } else {
       return `${Math.floor(diffInMinutes / 1440)}d ago`
     }
+  }
+
+  const handleMessagesUpdate = (messages: any[]) => {
+    setCurrentMessages(messages)
   }
 
   const handleVerificationComplete = async (verificationData: {
@@ -417,10 +465,11 @@ export default function VerifyPage() {
                </div>
             </div>
             <div className="flex items-center gap-2">
-              {currentVerification && (
-                <ShareButton 
-                  verificationData={currentVerification}
-                  className="hidden sm:block"
+              {currentMessages.length > 1 && (
+                <ChatShareButton 
+                  messages={currentMessages}
+                  conversationTitle="FakeVerifier Chat"
+                  className="flex"
                 />
               )}
               
@@ -656,8 +705,12 @@ export default function VerifyPage() {
                       </Breadcrumb>
                     </div>
                     <div className="flex items-center gap-2">
-                      {currentVerification && (
-                        <ShareButton verificationData={currentVerification} />
+                      {currentMessages.length > 1 && (
+                        <ChatShareButton 
+                          messages={currentMessages}
+                          conversationTitle="FakeVerifier Chat"
+                          className="flex"
+                        />
                       )}
                       
                       {/* User Profile Dropdown */}
@@ -713,6 +766,7 @@ export default function VerifyPage() {
                     <EnhancedChatInterface
                       ref={chatInterfaceRef}
                       onVerificationComplete={handleVerificationComplete}
+                      onMessagesUpdate={handleMessagesUpdate}
                     />
                   </div>
                 </main>
@@ -727,6 +781,7 @@ export default function VerifyPage() {
             <EnhancedChatInterface
               ref={chatInterfaceRef}
               onVerificationComplete={handleVerificationComplete}
+              onMessagesUpdate={handleMessagesUpdate}
             />
           </div>
         </main>

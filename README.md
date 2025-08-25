@@ -4,9 +4,10 @@
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
 [![Firebase](https://img.shields.io/badge/Firebase-10.0-orange?style=for-the-badge&logo=firebase)](https://firebase.google.com/)
 [![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-green?style=for-the-badge&logo=openai)](https://openai.com/)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-Qwen-blue?style=for-the-badge&logo=openai)](https://openrouter.ai/)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.3-38B2AC?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 
-> **Advanced AI-powered platform for real-time news verification and credibility assessment using multiple news APIs and GPT-4o**
+> **Advanced AI-powered platform for real-time news verification and credibility assessment using multiple news APIs and AI models (OpenAI GPT-4o for paid users, OpenRouter Qwen for free users)**
 
 ## 📋 Table of Contents
 
@@ -42,9 +43,10 @@ FakeVerifier addresses this challenge by providing:
 
 ### 🔍 **Advanced Content Analysis**
 - **Multi-format support**: Text, URLs, and social media content
-- **AI-powered verification**: GPT-4o integration for intelligent analysis
+- **AI-powered verification**: Multi-model integration (GPT-4o for paid users, Qwen for free users)
 - **Real-time scoring**: Confidence percentages and credibility ratings
 - **Detailed explanations**: Comprehensive reasoning for each verification result
+- **Tier-based model selection**: Automatic model selection based on user subscription status
 
 ### 📰 **Multi-Source News Integration**
 - **News API**: Real-time articles from 80,000+ sources
@@ -83,7 +85,8 @@ FakeVerifier addresses this challenge by providing:
 
 ### **Backend & APIs**
 - **Next.js API Routes**: Server-side API endpoints
-- **OpenAI GPT-4o**: Advanced AI content analysis
+- **OpenAI GPT-4o**: Advanced AI content analysis for paid users
+- **OpenRouter Qwen**: Cost-effective AI analysis for free users
 - **Firebase Firestore**: NoSQL database for user data
 - **Firebase Authentication**: User management system
 
@@ -190,7 +193,7 @@ const analysis = await verifyContent({
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/fakeverifier-website.git
+git clone https://github.com/pdevulapally/fakeverifier-website.git
 cd fakeverifier-website
 ```
 
@@ -235,7 +238,7 @@ yarn dev
 
 6. **Open your browser**
 ```
-http://localhost:3000
+https://your-app-domain.com
 ```
 
 ## 📁 Project Structure
@@ -323,6 +326,34 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - **Rate Limiting**: Protection against abuse
 - **CORS Configuration**: Secure cross-origin requests
 
+## 🤖 AI Model Integration
+
+### **Multi-Tier AI System**
+FakeVerifier uses a sophisticated tier-based AI system to optimize costs while maintaining quality:
+
+#### **Free Users (OpenRouter)**
+- **Model**: Qwen 2.5 Coder 7B Instruct
+- **Provider**: OpenRouter (free tier)
+- **Features**: Cost-effective analysis with good accuracy
+- **Token Limit**: 2000 tokens per request
+- **Use Cases**: Basic news verification, content analysis
+
+#### **Paid Users (OpenAI)**
+- **Model**: GPT-4o / GPT-4o Search Preview
+- **Provider**: OpenAI (premium tier)
+- **Features**: Advanced analysis with superior accuracy
+- **Token Limit**: 3000 tokens per request
+- **Use Cases**: Comprehensive verification, real-time search, detailed analysis
+
+### **Automatic Model Selection**
+The system automatically selects the appropriate AI model based on:
+- User authentication status
+- Subscription tier (free vs paid)
+- Content type (real-time vs historical)
+- Analysis complexity requirements
+
+For detailed setup instructions, see [OpenRouter Setup Guide](OPENROUTER_SETUP.md).
+
 ## 📈 Future Roadmap
 
 ### **Phase 1 (Current)**
@@ -330,6 +361,7 @@ We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.
 - ✅ AI-powered analysis
 - ✅ User authentication
 - ✅ Real-time chat interface
+- ✅ Tier-based AI model selection
 
 ### **Phase 2 (Planned)**
 - 🔄 Browser extension
@@ -369,8 +401,8 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Built with ❤️ using Next.js, TypeScript, and OpenAI**
 
-[![GitHub stars](https://img.shields.io/github/stars/yourusername/fakeverifier-website?style=social)](https://github.com/yourusername/fakeverifier-website/stargazers)
-[![GitHub forks](https://img.shields.io/github/forks/yourusername/fakeverifier-website?style=social)](https://github.com/yourusername/fakeverifier-website/network)
-[![GitHub issues](https://img.shields.io/github/issues/yourusername/fakeverifier-website)](https://github.com/yourusername/fakeverifier-website/issues)
+[![GitHub stars](https://img.shields.io/github/stars/pdevulapally/fakeverifier-website?style=social)](https://github.com/pdevulapally/fakeverifier-website/stargazers)
+[![GitHub forks](https://img.shields.io/github/forks/pdevulapally/fakeverifier-website?style=social)](https://github.com/pdevulapally/fakeverifier-website/network)
+[![GitHub issues](https://img.shields.io/github/issues/pdevulapally/fakeverifier-website)](https://github.com/pdevulapally/fakeverifier-website/issues)
 
 </div>

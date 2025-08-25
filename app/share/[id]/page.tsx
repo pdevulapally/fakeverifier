@@ -1,14 +1,16 @@
 import { notFound } from 'next/navigation'
+import { SharedPageClient } from './shared-page-client'
 
 async function fetchShared(id: string) {
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || ''
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
   const res = await fetch(`${baseUrl}/api/share?id=${encodeURIComponent(id)}`, { cache: 'no-store' })
   if (!res.ok) return null
   return res.json()
 }
 
-export default async function SharedPage({ params }: { params: { id: string } }) {
-  const data = await fetchShared(params.id)
+export default async function SharedPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params
+  const data = await fetchShared(id)
   if (!data) return notFound()
 
   const { verificationData, messages } = data
@@ -43,7 +45,11 @@ export default async function SharedPage({ params }: { params: { id: string } })
         )}
 
         <div className="mt-8">
-          <a href="/Signup" className="inline-flex items-center rounded-full px-4 py-2 bg-blue-600 text-white text-sm">Continue in FakeVerifier</a>
+          <SharedPageClient 
+            shareId={id} 
+            verificationData={verificationData} 
+            messages={messages} 
+          />
         </div>
       </main>
     </div>

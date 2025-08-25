@@ -1,9 +1,108 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { adminAuth } from '@/lib/firebase-admin';
+import { getUserTier, createAIClient, getModelForUseCase, getModelParams, getModelConfig, markModelRateLimited, markModelUsed, getRateLimitMessage, getUpgradeSuggestion } from '@/lib/model-selection';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Utility functions for retry logic and error handling
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function retryWithExponentialBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000,
+  maxDelay: number = 8000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on certain errors
+      if (error.status === 400 || error.status === 401 || error.status === 403) {
+        throw error;
+      }
+      
+      // If this is the last attempt, throw the error
+      if (attempt === maxRetries) {
+        console.error(`Operation failed after ${maxRetries + 1} attempts:`, error);
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+      
+      // Add jitter to prevent thundering herd
+      const jitter = Math.random() * 0.1 * delay;
+      const totalDelay = delay + jitter;
+      
+      console.log(`Attempt ${attempt + 1} failed, retrying in ${Math.round(totalDelay)}ms...`);
+      await sleep(totalDelay);
+    }
+  }
+  
+  throw lastError!;
+}
+
+// Enhanced fetch with timeout and retry logic
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = 10000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  }
+}
+
+// Get base URL from request or environment
+function getBaseUrl(request: NextRequest): string {
+  // Try to get from request headers first
+  const host = request.headers.get('host');
+  const protocol = request.headers.get('x-forwarded-proto') || 'http';
+  
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+  
+  // Fallback to environment variable
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+}
+
+// Helper function to extract sources from AI response
+function extractSources(response: string): string[] {
+  const sources = response.match(/(?:https?:\/\/[^\s]+)/g) || [];
+  return sources.map(url => {
+    // Clean up the URL by removing trailing parentheses and brackets
+    return url.replace(/[\)\]]+$/, '');
+  }).filter(url => url.length > 0) || ["AI analysis based on available information"];
+}
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
+  // Declare variables in function scope so they're accessible in catch block
+  let userTier: 'FREE' | 'PAID' = 'FREE';
+  let userId: string | null = null;
+  
   try {
     const { input } = await request.json();
 
@@ -14,8 +113,64 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4o",
+    // Get base URL for internal API calls
+    const baseUrl = getBaseUrl(request);
+    console.log('Using base URL:', baseUrl);
+
+    // Get user authentication and subscription status
+    try {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const idToken = authHeader.split('Bearer ')[1];
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        userId = decodedToken.uid;
+
+        // Get user subscription status with retry logic
+        const subscriptionResponse = await retryWithExponentialBackoff(async () => {
+          return fetchWithTimeout(`${baseUrl}/api/get-subscription`, {
+            headers: {
+              'Authorization': `Bearer ${idToken}`
+            }
+          }, 5000);
+        }, 2, 1000, 4000);
+
+        if (subscriptionResponse.ok) {
+          const subscriptionData = await subscriptionResponse.json();
+          userTier = getUserTier(subscriptionData.hasSubscription, subscriptionData.subscription);
+        }
+      }
+    } catch (error) {
+      console.log('User authentication/subscription check failed, using free tier:', error);
+      userTier = 'FREE';
+    }
+
+    console.log(`User tier: ${userTier}, User ID: ${userId}`);
+
+    // Create AI client based on user tier
+    const aiClient = createAIClient(userTier);
+    const modelParams = getModelParams(userTier);
+    
+    // AI completion with comprehensive retry logic, rate limiting, and model fallback
+    let attemptedModels: string[] = [];
+    let finalModel = '';
+    let fallbackMessage = '';
+    
+    const completion = await retryWithExponentialBackoff(async () => {
+      // Get the next available model
+      const modelInfo = getModelForUseCase(userTier, 'default', attemptedModels);
+      const modelToUse = modelInfo.model;
+      finalModel = modelToUse;
+      
+      if (modelInfo.message) {
+        fallbackMessage = modelInfo.message;
+        console.log(`Model fallback: ${modelInfo.message}`);
+      }
+      
+      console.log(`Attempting AI completion with model: ${modelToUse} (${userTier} tier)`);
+      
+      try {
+        const result = await aiClient.chat.completions.create({
+          model: modelToUse,
       messages: [
         { 
           role: "system", 
@@ -27,9 +182,33 @@ export async function POST(request: NextRequest) {
         },
         { role: "user", content: `Verify this news: ${input}` },
       ],
-      max_tokens: 2000,
-      temperature: 0.3,
-    });
+          ...modelParams,
+        });
+        
+        // Mark model as successfully used
+        markModelUsed(userTier, modelToUse);
+        console.log('AI completion successful');
+        return result;
+      } catch (error: any) {
+        // If rate limit error, mark this model as rate limited and try next
+        if (error.status === 429) {
+          markModelRateLimited(userTier, modelToUse);
+          attemptedModels.push(modelToUse);
+          
+          // If we've tried all available models, throw the error
+          const config = getModelConfig(userTier);
+          const modelList = config.models.default;
+          if (Array.isArray(modelList) && attemptedModels.length >= modelList.length) {
+            throw new Error(getRateLimitMessage(userTier, modelToUse));
+          }
+          
+          // Otherwise, retry with next model
+          throw error;
+        }
+        
+        throw error;
+      }
+    }, 5, 2000, 16000); // More retries for AI calls, longer delays
 
     const aiResponse = completion.choices[0]?.message?.content;
     
@@ -51,23 +230,72 @@ export async function POST(request: NextRequest) {
         latestUpdate: new Date().toISOString().split("T")[0],
         sourcesChecked: sources,
         explanation: aiResponse,
+        userTier,
+        model: finalModel,
+        fallbackInfo: fallbackMessage ? { message: fallbackMessage } : undefined
       }
     });
 
-  } catch (error) {
-    console.error("Error verifying news:", error);
+  } catch (error: any) {
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    
+    console.error('Verify API Error:', {
+      error: error.message,
+      stack: error.stack,
+      duration: `${duration}ms`,
+      userTier: userTier || 'UNKNOWN',
+      userId: userId || 'UNKNOWN',
+      timestamp: new Date().toISOString()
+    });
+
+    // Handle specific error types
+    if (error.message?.includes('timeout')) {
+      return NextResponse.json(
+        { 
+          error: 'Request timed out. Please try again with a shorter content or try later.',
+          details: 'The verification took too long to complete',
+          duration: `${duration}ms`
+        },
+        { status: 408 }
+      );
+    }
+
+    if (error.status === 429) {
+      const rateLimitMessage = getRateLimitMessage(userTier || 'FREE', 'AI Model');
+      const upgradeSuggestion = userTier === 'FREE' ? getUpgradeSuggestion() : undefined;
+      
+      return NextResponse.json(
+        { 
+          error: rateLimitMessage,
+          details: 'Too many requests to the AI service',
+          retryAfter: userTier === 'FREE' ? '5 minutes' : '30 seconds',
+          upgradeSuggestion,
+          userTier: userTier || 'FREE'
+        },
+        { status: 429 }
+      );
+    }
+
+    if (error.status === 401 || error.status === 403) {
+      return NextResponse.json(
+        { 
+          error: 'Authentication failed. Please check your API configuration.',
+          details: 'Invalid or missing API keys'
+        },
+        { status: error.status }
+      );
+    }
+
+    // Generic error response with more details for debugging
     return NextResponse.json(
-      { error: "Something went wrong while verifying news." },
+      { 
+        error: 'Something went wrong while verifying news.',
+        details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }
-}
-
-// Helper function to extract sources from AI response
-function extractSources(response: string): string[] {
-  const sources = response.match(/(?:https?:\/\/[^\s]+)/g) || [];
-  return sources.map(url => {
-    // Clean up the URL by removing trailing parentheses and brackets
-    return url.replace(/[\)\]]+$/, '');
-  }).filter(url => url.length > 0) || ["AI analysis based on available information"];
 }

@@ -31,11 +31,13 @@ const TIERS = [
     description: 'Perfect for getting started',
     features: [
       '50 verification tokens per month',
-      'Basic AI analysis',
+      'Free AI models (Qwen, Mistral, Llama)',
       'Standard response time',
       'Community support',
       'Basic source verification',
       'Email support',
+      'AI model fallback system',
+      'Rate limit handling',
     ],
     cta: 'Get Started',
     tokens: 50,
@@ -50,13 +52,15 @@ const TIERS = [
     description: 'Great for power users',
     features: [
       '500 verification tokens per month',
-      'Advanced AI analysis with GPT-4o',
+      'Premium AI models (OpenAI GPT-4o & GPT-4o Search)',
       'Faster response time',
       'Priority support',
       'Custom source verification',
       'Real-time news integration',
       'Advanced bias detection',
       'Email & chat support',
+      'No rate limits',
+      'Premium AI performance',
     ],
     cta: 'Upgrade to Pro',
     tokens: 500,
@@ -72,7 +76,7 @@ const TIERS = [
     description: 'For teams and organizations',
     features: [
       '5000 verification tokens per month',
-      'Unlimited AI analysis',
+      'Unlimited AI analysis with GPT-4o',
       'Instant response time',
       'Dedicated support',
       'API access',
@@ -81,6 +85,8 @@ const TIERS = [
       'Advanced analytics',
       'White-label options',
       'Phone & priority support',
+      'No rate limits',
+      'Highest AI performance',
     ],
     cta: 'Contact Sales',
     tokens: 5000,
@@ -618,7 +624,7 @@ export default function PricingPage() {
               Choose Your Plan
             </h1>
             <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-              Unlock the full power of AI-powered news verification. Get more tokens, faster analysis, and advanced features.
+              Unlock the full power of AI-powered news verification. Free users get OpenRouter models, Pro users get OpenAI GPT-4o for superior accuracy.
             </p>
             {user && !authLoading && (
               <div className="flex items-center justify-center gap-2">
@@ -681,9 +687,9 @@ export default function PricingPage() {
               <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
                 <Zap className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
               </div>
-              <h3 className="font-semibold text-sm sm:text-base">AI-Powered Analysis</h3>
+              <h3 className="font-semibold text-sm sm:text-base">Multi-AI Analysis</h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
-                Advanced GPT-4o technology for comprehensive news verification
+                Free: OpenRouter models (Qwen, Mistral, Llama) | Pro: OpenAI GPT-4o
               </p>
             </Card>
 
@@ -723,6 +729,13 @@ export default function PricingPage() {
               <h3 className="font-semibold mb-2 text-sm sm:text-base">What are tokens?</h3>
               <p className="text-xs sm:text-sm text-muted-foreground">
                 Tokens are used for each news verification request. One verification = one token. Tokens reset monthly.
+              </p>
+            </Card>
+
+            <Card className="p-4 sm:p-6">
+              <h3 className="font-semibold mb-2 text-sm sm:text-base">What's the difference between Free and Pro AI models?</h3>
+              <p className="text-xs sm:text-sm text-muted-foreground">
+                Free plan uses OpenRouter's free models (Qwen, Mistral, Llama) with automatic fallback. Pro plan uses OpenAI's GPT-4o for superior accuracy and no rate limits.
               </p>
             </Card>
 
@@ -828,7 +841,7 @@ export default function PricingPage() {
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
                   <span className="text-sm">
                     {downgradeTarget === 'free' 
-                      ? 'Remove access to advanced features and priority support'
+                      ? 'Switch from OpenAI GPT-4o to OpenRouter free models'
                       : 'Remove access to enterprise features and dedicated support'
                     }
                   </span>
@@ -837,7 +850,7 @@ export default function PricingPage() {
                   <div className="w-2 h-2 bg-red-500 rounded-full mt-2 flex-shrink-0"></div>
                   <span className="text-sm">
                     {downgradeTarget === 'free' 
-                      ? 'Switch to standard response times'
+                      ? 'Switch to standard response times with potential rate limits'
                       : 'Switch to faster response times (but not instant)'
                     }
                   </span>

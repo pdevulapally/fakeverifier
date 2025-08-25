@@ -1,16 +1,101 @@
 import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
+import { adminAuth } from '@/lib/firebase-admin';
+import { getUserTier, createAIClient, getModelForUseCase, getModelParams, getModelConfig, markModelRateLimited, markModelUsed, getRateLimitMessage, getUpgradeSuggestion } from '@/lib/model-selection';
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const NEWSAPI_AI_KEY = process.env.NEWSAPI_AI_KEY;
 const FINLIGHT_API_KEY = process.env.FINLIGHT_API_KEY;
 const NYT_API_KEY = process.env.NYT_API_KEY;
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// Validate required API keys
-if (!process.env.OPENAI_API_KEY) {
-  throw new Error('OPENAI_API_KEY environment variable is required');
+// Validate required environment variables
+if (!process.env.NEXT_PUBLIC_APP_URL) {
+  throw new Error('NEXT_PUBLIC_APP_URL environment variable is required');
+}
+
+// Utility functions for retry logic and error handling
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function retryWithExponentialBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries: number = 3,
+  baseDelay: number = 1000,
+  maxDelay: number = 8000
+): Promise<T> {
+  let lastError: Error;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error: any) {
+      lastError = error;
+      
+      // Don't retry on certain errors
+      if (error.status === 400 || error.status === 401 || error.status === 403) {
+        throw error;
+      }
+      
+      // If this is the last attempt, throw the error
+      if (attempt === maxRetries) {
+        console.error(`Operation failed after ${maxRetries + 1} attempts:`, error);
+        throw error;
+      }
+      
+      // Calculate delay with exponential backoff
+      const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+      
+      // Add jitter to prevent thundering herd
+      const jitter = Math.random() * 0.1 * delay;
+      const totalDelay = delay + jitter;
+      
+      console.log(`Attempt ${attempt + 1} failed, retrying in ${Math.round(totalDelay)}ms...`);
+      await sleep(totalDelay);
+    }
+  }
+  
+  throw lastError!;
+}
+
+// Enhanced fetch with timeout and retry logic
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeout: number = 10000
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+  
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    clearTimeout(timeoutId);
+    return response;
+  } catch (error: any) {
+    clearTimeout(timeoutId);
+    if (error.name === 'AbortError') {
+      throw new Error(`Request timeout after ${timeout}ms`);
+    }
+    throw error;
+  }
+}
+
+// Get base URL from request or environment
+function getBaseUrl(request: NextRequest): string {
+  // Try to get from request headers first
+  const host = request.headers.get('host');
+  const protocol = request.headers.get('x-forwarded-proto') || 'http';
+  
+  if (host) {
+    return `${protocol}://${host}`;
+  }
+  
+  // Fallback to environment variable
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 }
 
 // Security validation for URLs
@@ -57,17 +142,14 @@ function extractUrls(content: string): string[] {
   return matches.filter(url => isValidUrl(url));
 }
 
-// Fetch content from URL safely
+// Fetch content from URL safely with retry logic
 async function fetchUrlContent(url: string): Promise<string | null> {
-  try {
+  return retryWithExponentialBackoff(async () => {
     if (!isValidUrl(url)) {
       return null;
     }
     
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-    
-    const response = await fetch(url, {
+    const response = await fetchWithTimeout(url, {
       method: 'GET',
       headers: {
         'User-Agent': 'FakeVerifier-Bot/1.0',
@@ -76,10 +158,7 @@ async function fetchUrlContent(url: string): Promise<string | null> {
         'Accept-Encoding': 'gzip, deflate',
         'Connection': 'keep-alive',
       },
-      signal: controller.signal,
-    });
-    
-    clearTimeout(timeoutId);
+    }, 10000);
     
     if (!response.ok) {
       return null;
@@ -101,13 +180,16 @@ async function fetchUrlContent(url: string): Promise<string | null> {
       .trim();
     
     return cleanText.substring(0, 5000); // Limit content length
-  } catch (error) {
-    console.log('Error fetching URL content:', error);
-    return null;
-  }
+  }, 2, 1000, 4000);
 }
 
 export async function POST(request: NextRequest) {
+  const startTime = Date.now();
+  
+  // Declare variables in function scope so they're accessible in catch block
+  let userTier: 'FREE' | 'PAID' = 'FREE';
+  let userId: string | null = null;
+  
   try {
     const { content, type = 'news' } = await request.json();
 
@@ -118,6 +200,40 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get base URL for internal API calls
+    const baseUrl = getBaseUrl(request);
+    console.log('Using base URL:', baseUrl);
+
+    // Get user authentication and subscription status
+
+    try {
+      const authHeader = request.headers.get('authorization');
+      if (authHeader && authHeader.startsWith('Bearer ')) {
+        const idToken = authHeader.split('Bearer ')[1];
+        const decodedToken = await adminAuth.verifyIdToken(idToken);
+        userId = decodedToken.uid;
+
+        // Get user subscription status with retry logic
+        const subscriptionResponse = await retryWithExponentialBackoff(async () => {
+          return fetchWithTimeout(`${baseUrl}/api/get-subscription`, {
+            headers: {
+              'Authorization': `Bearer ${idToken}`
+            }
+          }, 5000);
+        }, 2, 1000, 4000);
+
+        if (subscriptionResponse.ok) {
+          const subscriptionData = await subscriptionResponse.json();
+          userTier = getUserTier(subscriptionData.hasSubscription, subscriptionData.subscription);
+        }
+      }
+    } catch (error) {
+      console.log('User authentication/subscription check failed, using free tier:', error);
+      userTier = 'FREE';
+    }
+
+    console.log(`User tier: ${userTier}, User ID: ${userId}`);
+
     // Extract and validate URLs from content
     const urls = extractUrls(content);
     let urlContent = '';
@@ -126,17 +242,21 @@ export async function POST(request: NextRequest) {
     if (urls.length > 0) {
       urlAnalysis = `\n\nURLs found in content:\n${urls.map((url, index) => `${index + 1}. ${url}`).join('\n')}`;
       
-      // Fetch content from the first valid URL
+      // Fetch content from the first valid URL with retry logic
+      try {
       const firstUrlContent = await fetchUrlContent(urls[0]);
       if (firstUrlContent) {
         urlContent = `\n\nContent extracted from ${urls[0]}:\n${firstUrlContent}`;
+        }
+      } catch (error) {
+        console.log('URL content fetch failed:', error);
       }
     }
 
     // Extract keywords from content for news search
     const keywords = extractKeywords(content);
     
-    // Fetch real-time news data from all five APIs
+    // Fetch real-time news data from all five APIs with retry logic and timeouts
     let newsData = [];
     let newsApiAiData = [];
     let finlightData = [];
@@ -146,16 +266,22 @@ export async function POST(request: NextRequest) {
     // Search for relevant news videos
     let videoData = [];
     try {
-      videoData = await searchNewsVideos(keywords, content);
+      videoData = await retryWithExponentialBackoff(async () => {
+        return searchNewsVideos(keywords, content);
+      }, 2, 1000, 4000);
     } catch (error) {
       console.log('Video search error:', error);
     }
     
+    // Fetch from News API with retry logic
     try {
-      // Fetch from News API
-      const newsResponse = await fetch(
-        `https://newsapi.org/v2/everything?q=${encodeURIComponent(keywords.join(' '))}&sortBy=publishedAt&language=en&pageSize=10&apiKey=${NEWS_API_KEY}`
-      );
+      const newsResponse = await retryWithExponentialBackoff(async () => {
+        return fetchWithTimeout(
+          `https://newsapi.org/v2/everything?q=${encodeURIComponent(keywords.join(' '))}&sortBy=publishedAt&language=en&pageSize=10&apiKey=${NEWS_API_KEY}`,
+          {},
+          8000
+        );
+      }, 2, 1000, 4000);
       
       if (newsResponse.ok) {
         const newsResult = await newsResponse.json();
@@ -165,9 +291,10 @@ export async function POST(request: NextRequest) {
       console.log('News API error:', error);
     }
 
+    // Fetch from NewsAPI.ai with retry logic
     try {
-      // Fetch from NewsAPI.ai
-      const newsApiAiResponse = await fetch('https://eventregistry.org/api/v1/article/getArticles', {
+      const newsApiAiResponse = await retryWithExponentialBackoff(async () => {
+        return fetchWithTimeout('https://eventregistry.org/api/v1/article/getArticles', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -186,7 +313,8 @@ export async function POST(request: NextRequest) {
           articlesIncludeArticleTitle: true,
           articlesIncludeArticleDescription: true
         })
-      });
+        }, 8000);
+      }, 2, 1000, 4000);
       
       if (newsApiAiResponse.ok) {
         const newsApiAiResult = await newsApiAiResponse.json();
@@ -196,12 +324,13 @@ export async function POST(request: NextRequest) {
       console.log('NewsAPI.ai error:', error);
     }
 
+    // Fetch from Finlight API with retry logic
     try {
-      // Fetch from Finlight API
       if (!FINLIGHT_API_KEY) {
         console.log('Finlight API key not configured');
       } else {
-        const finlightResponse = await fetch('https://api.finlight.me/v2/articles', {
+        const finlightResponse = await retryWithExponentialBackoff(async () => {
+          return fetchWithTimeout('https://api.finlight.me/v2/articles', {
           method: 'POST',
           headers: {
             'accept': 'application/json',
@@ -213,7 +342,8 @@ export async function POST(request: NextRequest) {
             limit: 10,
             sortBy: 'date'
           })
-        });
+          }, 8000);
+        }, 2, 1000, 4000);
         
         if (finlightResponse.ok) {
           const finlightResult = await finlightResponse.json();
@@ -224,11 +354,15 @@ export async function POST(request: NextRequest) {
       console.log('Finlight API error:', error);
     }
 
+    // Fetch from New York Times Top Stories API with retry logic
     try {
-      // Fetch from New York Times Top Stories API
-      const nytResponse = await fetch(
-        `https://api.nytimes.com/svc/topstories/v2/home.json?api-key=${NYT_API_KEY}`
-      );
+      const nytResponse = await retryWithExponentialBackoff(async () => {
+        return fetchWithTimeout(
+          `https://api.nytimes.com/svc/topstories/v2/home.json?api-key=${NYT_API_KEY}`,
+          {},
+          8000
+        );
+      }, 2, 1000, 4000);
       
       if (nytResponse.ok) {
         const nytResult = await nytResponse.json();
@@ -244,9 +378,15 @@ export async function POST(request: NextRequest) {
       console.log('NYT API error:', error);
     }
 
+    // Fetch from Sky News RSS feed with proper absolute URL and retry logic
     try {
-      // Fetch from Sky News RSS feed
-      const skyNewsResponse = await fetch(`/api/sky-news-rss?q=${encodeURIComponent(keywords.join(' '))}&limit=10`);
+      const skyNewsResponse = await retryWithExponentialBackoff(async () => {
+        return fetchWithTimeout(
+          `${baseUrl}/api/sky-news-rss?q=${encodeURIComponent(keywords.join(' '))}&limit=10`,
+          {},
+          8000
+        );
+      }, 2, 1000, 4000);
       
       if (skyNewsResponse.ok) {
         const skyNewsResult = await skyNewsResponse.json();
@@ -259,10 +399,11 @@ export async function POST(request: NextRequest) {
     // Determine if this is real-time news or older content
     const isRealTimeNews = checkIfRealTimeNews(content, newsData, newsApiAiData, finlightData, nytData, skyNewsData);
     
-    // Choose the appropriate model based on content type
-    const modelToUse = isRealTimeNews ? "gpt-4o-search-preview" : "gpt-4o";
+    // Choose the appropriate model based on user tier and content type
+    const useCase = isRealTimeNews ? 'search' : 'analysis';
+    const modelParams = getModelParams(userTier);
     
-    console.log(`Using model: ${modelToUse} for ${isRealTimeNews ? 'real-time' : 'older'} news content`);
+    console.log(`Using ${userTier} tier for ${isRealTimeNews ? 'real-time' : 'older'} news content`);
     
     // Determine which APIs to use based on content analysis
     const apiSelection = determineApiSelection(content, isRealTimeNews, {
@@ -402,14 +543,61 @@ FORMATTING: Write clear, well-structured explanations. Use **bold** formatting f
 
 Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sources and current context in your analysis. Cross-reference with all available ${isRealTimeNews ? 'search results' : 'news APIs'} and analyze for AI-generated content patterns.${isRealTimeNews ? '' : `${newsContext}${newsApiAiContext}${finlightContext}${nytContext}${skyNewsContext}${videoContext}`}`;
     
-    const completion = await openai.chat.completions.create({
+    // Create AI client based on user tier
+    const aiClient = createAIClient(userTier);
+    
+    // AI completion with comprehensive retry logic, rate limiting, and model fallback
+    let attemptedModels: string[] = [];
+    let finalModel = '';
+    let fallbackMessage = '';
+    
+    const completion = await retryWithExponentialBackoff(async () => {
+      // Get the next available model
+      const modelInfo = getModelForUseCase(userTier, useCase, attemptedModels);
+      const modelToUse = modelInfo.model;
+      finalModel = modelToUse;
+      
+      if (modelInfo.message) {
+        fallbackMessage = modelInfo.message;
+        console.log(`Model fallback: ${modelInfo.message}`);
+      }
+      
+      console.log(`Attempting AI completion with model: ${modelToUse} (${userTier} tier)`);
+      
+      try {
+        const result = await aiClient.chat.completions.create({
       model: modelToUse,
       messages: [
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      max_tokens: 3000,
-    });
+          ...modelParams,
+        });
+        
+        // Mark model as successfully used
+        markModelUsed(userTier, modelToUse);
+        console.log('AI completion successful');
+        return result;
+      } catch (error: any) {
+        // If rate limit error, mark this model as rate limited and try next
+        if (error.status === 429) {
+          markModelRateLimited(userTier, modelToUse);
+          attemptedModels.push(modelToUse);
+          
+          // If we've tried all available models, throw the error
+          const config = getModelConfig(userTier);
+          const modelList = config.models[useCase];
+          if (Array.isArray(modelList) && attemptedModels.length >= modelList.length) {
+            throw new Error(getRateLimitMessage(userTier, modelToUse));
+          }
+          
+          // Otherwise, retry with next model
+          throw error;
+        }
+        
+        throw error;
+      }
+    }, 5, 2000, 16000); // More retries for AI calls, longer delays
 
     const aiResponse = completion.choices[0]?.message?.content;
     
@@ -547,7 +735,8 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
 
     return NextResponse.json({
       analysis: aiResponse,
-      model: modelToUse,
+      model: finalModel,
+      userTier,
       isRealTimeNews,
       timestamp: new Date().toISOString(),
       newsData: sortedSources, // Return only the most relevant sources
@@ -557,6 +746,7 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
         selectedApis: apiSelection.selectedApis,
         reasoning: apiSelection.reasoning
       },
+      fallbackInfo: fallbackMessage ? { message: fallbackMessage } : undefined,
       structuredData: {
         verdict,
         confidence,
@@ -570,10 +760,65 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
       }
     });
 
-  } catch (error) {
-    console.error('AI Analysis Error:', error);
+  } catch (error: any) {
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    
+    console.error('AI Analysis Error:', {
+      error: error.message,
+      stack: error.stack,
+      duration: `${duration}ms`,
+      userTier: userTier || 'UNKNOWN',
+      userId: userId || 'UNKNOWN',
+      timestamp: new Date().toISOString()
+    });
+
+    // Handle specific error types
+    if (error.message?.includes('timeout')) {
     return NextResponse.json(
-      { error: 'Failed to analyze content. Please try again.' },
+        { 
+          error: 'Request timed out. Please try again with a shorter content or try later.',
+          details: 'The analysis took too long to complete',
+          duration: `${duration}ms`
+        },
+        { status: 408 }
+      );
+    }
+
+    if (error.status === 429) {
+      const rateLimitMessage = getRateLimitMessage(userTier || 'FREE', 'AI Model');
+      const upgradeSuggestion = userTier === 'FREE' ? getUpgradeSuggestion() : undefined;
+      
+      return NextResponse.json(
+        { 
+          error: rateLimitMessage,
+          details: 'Too many requests to the AI service',
+          retryAfter: userTier === 'FREE' ? '5 minutes' : '30 seconds',
+          upgradeSuggestion,
+          userTier: userTier || 'FREE'
+        },
+        { status: 429 }
+      );
+    }
+
+    if (error.status === 401 || error.status === 403) {
+      return NextResponse.json(
+        { 
+          error: 'Authentication failed. Please check your API configuration.',
+          details: 'Invalid or missing API keys'
+        },
+        { status: error.status }
+      );
+    }
+
+    // Generic error response with more details for debugging
+    return NextResponse.json(
+      { 
+        error: 'Failed to analyze content. Please try again.',
+        details: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+        duration: `${duration}ms`,
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
     );
   }

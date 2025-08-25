@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     // Simple test to see if we can reach this point
     console.log('Environment check:', {
       hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
-      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_URL,
+      hasBaseUrl: !!process.env.NEXT_PUBLIC_APP_URL,
       hasFirebaseProjectId: !!process.env.FIREBASE_PROJECT_ID,
     });
 
@@ -225,11 +225,11 @@ export async function POST(request: NextRequest) {
     }
 
     // Validate and build success/cancel URLs
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
     if (!baseUrl) {
-      console.error('NEXT_PUBLIC_BASE_URL is not set');
+      console.error('NEXT_PUBLIC_APP_URL is not set');
       return NextResponse.json(
-        { error: 'App base URL is not configured (NEXT_PUBLIC_BASE_URL).' },
+        { error: 'App base URL is not configured (NEXT_PUBLIC_APP_URL).' },
         { status: 500 }
       );
     }
@@ -245,9 +245,9 @@ export async function POST(request: NextRequest) {
       successUrl = success.toString();
       cancelUrl = cancel.toString();
     } catch (e) {
-      console.error('Invalid NEXT_PUBLIC_BASE_URL value:', baseUrl);
+      console.error('Invalid NEXT_PUBLIC_APP_URL value:', baseUrl);
       return NextResponse.json(
-        { error: 'App base URL is invalid. Please set NEXT_PUBLIC_BASE_URL to a valid URL (e.g., http://localhost:3000).' },
+        { error: 'App base URL is invalid. Please set NEXT_PUBLIC_APP_URL to a valid URL.' },
         { status: 500 }
       );
     }
@@ -337,7 +337,7 @@ export async function GET() {
     timestamp: new Date().toISOString(),
     env: {
       hasStripeKey: !!process.env.STRIPE_SECRET_KEY,
-      hasBaseUrl: !!process.env.NEXT_PUBLIC_BASE_URL,
+      hasBaseUrl: !!process.env.NEXT_PUBLIC_APP_URL,
     }
   });
 }
