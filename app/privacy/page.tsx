@@ -11,7 +11,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-background">
       <Header />
       
-      <main className="container mx-auto px-4 py-12 max-w-4xl">
+      <main className="container mx-auto px-4 py-12 max-w-4xl pt-20 md:pt-24">
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-2 mb-6">
             <Shield className="h-5 w-5 text-blue-600" />
@@ -287,14 +287,15 @@ export default function PrivacyPage() {
               </div>
             </div>
 
-            <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-              <p className="text-blue-800 text-sm">
-                <strong>Contact Us:</strong> To exercise your rights or make privacy-related requests, please contact us at{" "}
-                <a href="mailto:privacy@fakeverifier.com" className="underline hover:text-blue-600">
-                  privacy@fakeverifier.com
-                </a>
-              </p>
-            </div>
+                         <div className="mt-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+               <p className="text-blue-800 text-sm">
+                 <strong>Contact Us:</strong> To exercise your rights or make privacy-related requests, please{" "}
+                 <a href="/contact" className="underline hover:text-blue-600">
+                   visit our contact page
+                 </a>
+                 .
+               </p>
+             </div>
           </Card>
 
           {/* International Transfers */}
@@ -321,24 +322,31 @@ export default function PrivacyPage() {
             </p>
           </Card>
 
-          {/* Contact Information */}
-          <Card className="p-8">
-            <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
-            <div className="space-y-3 text-muted-foreground">
-              <p>
-                <strong>Email:</strong>{" "}
-                <a href="mailto:preethamdevulapally@gmail.com" className="text-blue-600 hover:underline">
-                  preethamdevulapally@gmail.com
-                </a>
-              </p>
-              <p>
-                <strong>Address:</strong> University of Westminster, London, UK
-              </p>
-              <p>
-                <strong>Project:</strong> Final Year Dissertation - FakeVerifier
-              </p>
-            </div>
-          </Card>
+                     {/* Contact Information */}
+           <Card className="p-8">
+             <h2 className="text-2xl font-bold mb-4">Contact Us</h2>
+             <div className="space-y-3 text-muted-foreground">
+               <p>
+                 For general inquiries and support, please{" "}
+                 <a href="/contact" className="text-blue-600 hover:underline">
+                   visit our contact page
+                 </a>
+                 .
+               </p>
+               <p>
+                 <strong>Email:</strong>{" "}
+                 <a href="mailto:PreethamDevulapally@gmail.com" className="text-blue-600 hover:underline">
+                   PreethamDevulapally@gmail.com
+                 </a>
+               </p>
+               <p>
+                 <strong>Address:</strong> University of Westminster, London, UK
+               </p>
+               <p>
+                 <strong>Project:</strong> Final Year Dissertation - FakeVerifier
+               </p>
+             </div>
+           </Card>
         </div>
       </main>
 
