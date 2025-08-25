@@ -30,7 +30,7 @@ export function SEOOptimizer({
     "AI fact checker"
   ],
   image = "/og-image.png",
-  url = "https://fakeverifier.co.uk",
+  url = "https://www.fakeverifier.co.uk",
   type = "website",
   structuredData,
   canonical
@@ -41,7 +41,7 @@ export function SEOOptimizer({
     "@type": "WebApplication",
     "name": "FakeVerifier",
     "description": "AI-powered news verification and fact-checking platform",
-    "url": "https://fakeverifier.co.uk",
+    "url": "https://www.fakeverifier.co.uk",
     "applicationCategory": "NewsApplication",
     "operatingSystem": "Web Browser",
     "offers": {
@@ -123,8 +123,8 @@ export function SEOOptimizer({
             "@context": "https://schema.org",
             "@type": "Organization",
             "name": "FakeVerifier",
-            "url": "https://fakeverifier.co.uk",
-            "logo": "https://fakeverifier.co.uk/logo.png",
+            "url": "https://www.fakeverifier.co.uk",
+            "logo": "https://www.fakeverifier.co.uk/Images/Logo de FakeVerifier.png",
             "description": "AI-powered news verification and fact-checking platform",
             "foundingDate": "2024",
             "founder": {
@@ -143,7 +143,7 @@ export function SEOOptimizer({
 
 // SEO-optimized semantic wrapper components
 export function SEOHeader({ children, level = 1, className = "" }: { children: React.ReactNode; level?: 1 | 2 | 3 | 4 | 5 | 6; className?: string }) {
-  const Tag = `h${level}` as keyof JSX.IntrinsicElements;
+  const Tag = `h${level}` as keyof React.JSX.IntrinsicElements;
   return <Tag className={className}>{children}</Tag>;
 }
 
