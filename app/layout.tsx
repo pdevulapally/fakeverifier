@@ -63,14 +63,14 @@ export const metadata: Metadata = {
     address: false,
     telephone: false,
   },
-  metadataBase: new URL('https://fakeverifier.co.uk'),
+  metadataBase: new URL('https://www.fakeverifier.co.uk'),
   alternates: {
-    canonical: '/',
+    canonical: 'https://www.fakeverifier.co.uk',
   },
   openGraph: {
     type: 'website',
     locale: 'en_US',
-    url: 'https://fakeverifier.co.uk',
+    url: 'https://www.fakeverifier.co.uk',
     title: 'FakeVerifier - AI-Powered News Verification & Fact-Checking Platform',
     description: 'Advanced AI-powered platform for real-time news verification, fact-checking, and credibility assessment. Detect fake news, verify sources, and get instant credibility scores.',
     siteName: 'FakeVerifier',
@@ -101,11 +101,7 @@ export const metadata: Metadata = {
       'max-snippet': -1,
     },
   },
-  verification: {
-    google: 'your-google-verification-code',
-    yandex: 'your-yandex-verification-code',
-    yahoo: 'your-yahoo-verification-code',
-  },
+
   category: 'Technology',
   classification: 'News Verification Platform',
   generator: "Next.js",
@@ -118,14 +114,22 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${workSans.variable} ${openSans.variable} antialiased`}>
-      <head>
-        <link rel="icon" href="/favicon.ico" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="manifest" href="/site.webmanifest" />
-        <meta name="theme-color" content="#2563eb" />
-        <meta name="msapplication-TileColor" content="#2563eb" />
+             <head>
+         {/* Favicons */}
+         <link rel="icon" href="/favicon.ico" />
+         <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+         <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+         <link rel="manifest" href="/site.webmanifest" />
+         
+         {/* Theme Colors */}
+         <meta name="theme-color" content="#2563eb" />
+         <meta name="msapplication-TileColor" content="#2563eb" />
+         <meta name="msapplication-config" content="/browserconfig.xml" />
+         
+         {/* Additional Favicon Formats */}
+         <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#2563eb" />
+         <link rel="shortcut icon" href="/favicon.ico" />
         
         {/* Structured Data */}
         <script
@@ -136,7 +140,7 @@ export default function RootLayout({
               "@type": "WebApplication",
               "name": "FakeVerifier",
               "description": "AI-powered news verification and fact-checking platform",
-              "url": "https://fakeverifier.co.uk",
+                             "url": "https://www.fakeverifier.co.uk",
               "applicationCategory": "NewsApplication",
               "operatingSystem": "Web Browser",
               "offers": {
