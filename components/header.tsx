@@ -40,9 +40,9 @@ export function Header() {
             <div className="flex w-full justify-between lg:w-auto">
               <Link href="/" aria-label="home" className="flex items-center">
                 <img 
-                  src="/Images/fakeverifier-official-logo.png" 
+                  src="/Images/Logo de FakeVerifier.png" 
                   alt="FakeVerifier Logo" 
-                  className="h-14 w-14 object-contain"
+                  className="h-20 w-auto object-contain"
                 />
               </Link>
 
