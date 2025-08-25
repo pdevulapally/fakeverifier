@@ -9,9 +9,9 @@ export function Footer() {
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
               <img 
-                src="/Images/fakeverifier-official-logo.png" 
+                src="/Images/FakeVerifierwhiteLogo.png" 
                 alt="FakeVerifier Logo" 
-                className="h-12 w-12 md:h-16 md:w-16 object-contain"
+                className="h-24 w-auto md:h-32 md:w-auto object-contain"
               />
             </div>
             <p className="text-slate-300 leading-relaxed mb-6 text-sm">
@@ -94,9 +94,9 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <img 
-                src="/Images/fakeverifier-official-logo.png" 
+                src="/Images/FakeVerifierwhiteLogo.png" 
                 alt="FakeVerifier Logo" 
-                className="h-16 w-16 object-contain"
+                className="h-32 w-auto object-contain"
               />
             </div>
             <p className="text-slate-300 leading-relaxed mb-4">
