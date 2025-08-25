@@ -2,7 +2,7 @@ User-agent: *
 Allow: /
 
 # Sitemap
-Sitemap: https://fakeverifier.co.uk/sitemap.xml
+Sitemap: https://www.fakeverifier.co.uk/sitemap.xml
 
 # Crawl-delay
 Crawl-delay: 1
