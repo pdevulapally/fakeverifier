@@ -272,21 +272,15 @@ export default function VerifyPage() {
                   </Button>
                 </SheetTrigger>
                 <SheetContent side="left" className="w-80 p-0 flex flex-col h-full">
-                  <SheetHeader className="border-b p-4 flex-shrink-0">
-                    <SheetTitle className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                        <Bot className="h-4 w-4 text-white" />
-                      </div>
-                      <div className="flex flex-col">
-                        <img 
-                          src="/Images/fakeverifier-official-logo.png" 
-                          alt="FakeVerifier Logo" 
-                          className="h-10 w-10 object-contain"
-                        />
-                        <div className="text-xs text-muted-foreground">AI News Verification</div>
-                      </div>
-                    </SheetTitle>
-                  </SheetHeader>
+                                     <SheetHeader className="border-b p-4 flex-shrink-0">
+                     <SheetTitle className="flex items-center justify-start pl-4">
+                       <img 
+                         src="/Images/Logo de FakeVerifier.png" 
+                         alt="FakeVerifier Logo Icon" 
+                         className="h-20 w-auto object-contain"
+                       />
+                     </SheetTitle>
+                   </SheetHeader>
                   <div className="flex-1 overflow-y-auto p-4 space-y-4">
                     <TokenSystem 
                       onTokenDepleted={handleTokenDepleted}
@@ -414,19 +408,13 @@ export default function VerifyPage() {
                   </div>
                 </SheetContent>
               </Sheet>
-              <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                  <Bot className="h-4 w-4 text-white" />
-                </div>
-                                      <div className="flex flex-col">
-                        <img 
-                          src="/Images/fakeverifier-official-logo.png" 
-                          alt="FakeVerifier Logo" 
-                          className="h-10 w-10 object-contain"
-                        />
-                        <div className="text-xs text-muted-foreground">AI News Verification</div>
-                      </div>
-              </div>
+                             <div className="flex items-center justify-center">
+                 <img 
+                   src="/Images/FakeVerifierlogoicon.png" 
+                   alt="FakeVerifier Logo Icon" 
+                   className="h-16 w-16 object-contain"
+                 />
+               </div>
             </div>
             <div className="flex items-center gap-2">
               {currentVerification && (
@@ -490,21 +478,15 @@ export default function VerifyPage() {
           <SidebarProvider>
             <Sidebar>
               <SidebarRail />
-              <SidebarHeader className="border-b border-sidebar-border">
-                <div className="flex items-center gap-2 px-2 py-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600">
-                    <Bot className="h-4 w-4 text-white" />
-                  </div>
-                  <div className="flex flex-col">
-                    <img 
-                      src="/Images/fakeverifier-official-logo.png" 
-                      alt="FakeVerifier Logo" 
-                      className="h-10 w-10 object-contain"
-                    />
-                    <div className="text-xs text-sidebar-foreground/70">AI News Verification</div>
-                  </div>
-                </div>
-              </SidebarHeader>
+                             <SidebarHeader className="border-b border-sidebar-border">
+                 <div className="flex items-center justify-center py-1">
+                   <img 
+                     src="/Images/Logo de FakeVerifier.png" 
+                     alt="FakeVerifier Logo Icon" 
+                     className="h-24 w-auto object-contain flex-shrink-0"
+                   />
+                 </div>
+               </SidebarHeader>
               <SidebarContent className="overflow-y-auto overflow-x-hidden">
                 <SidebarGroup>
                   <SidebarGroupLabel>Token System</SidebarGroupLabel>
