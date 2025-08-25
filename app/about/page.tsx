@@ -1,21 +1,9 @@
+"use client"
+
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Shield, Brain, Globe, Search, Cloud, AlertTriangle, Users, Zap, CheckCircle, ArrowRight, Star, Award, Target } from 'lucide-react';
 import { Header } from '@/components/header';
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: 'About Us - FakeVerifier',
-  description: 'Learn about FakeVerifier, the AI-powered news verification platform combating fake news with advanced artificial intelligence technology.',
-  alternates: {
-    canonical: 'https://www.fakeverifier.co.uk/about',
-  },
-  openGraph: {
-    title: 'About Us - FakeVerifier',
-    description: 'Learn about FakeVerifier, the AI-powered news verification platform combating fake news with advanced artificial intelligence technology.',
-    url: 'https://www.fakeverifier.co.uk/about',
-  },
-};
 
 export default function AboutPage() {
   return (
