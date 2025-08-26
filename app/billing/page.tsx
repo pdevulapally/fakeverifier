@@ -70,6 +70,8 @@ interface TokenUsage {
   resetDate: Date;
   plan: "free" | "pro" | "enterprise";
   lastUpdated: Date;
+  dailyUsed?: number;
+  dailyResetDate?: Date;
 }
 
 export default function BillingPage() {
@@ -189,13 +191,37 @@ export default function BillingPage() {
   const getPlanDetails = (plan: string) => {
     switch (plan) {
       case 'free':
-        return { name: 'Free', tokens: 50, price: 0 };
+        return { 
+          name: 'Free', 
+          tokens: 50, 
+          dailyLimit: 5,
+          price: 0,
+          aiModel: 'OpenRouter free models (Qwen, Mistral, Llama, Gemma)'
+        };
       case 'pro':
-        return { name: 'Pro', tokens: 500, price: 9.99 };
+        return { 
+          name: 'Pro', 
+          tokens: 500, 
+          dailyLimit: 50,
+          price: 9.99,
+          aiModel: 'OpenAI GPT-4o'
+        };
       case 'enterprise':
-        return { name: 'Enterprise', tokens: 5000, price: 49.99 };
+        return { 
+          name: 'Enterprise', 
+          tokens: 5000, 
+          dailyLimit: 500,
+          price: 49.99,
+          aiModel: 'OpenAI GPT-4o'
+        };
       default:
-        return { name: 'Unknown', tokens: 0, price: 0 };
+        return { 
+          name: 'Unknown', 
+          tokens: 0, 
+          dailyLimit: 0,
+          price: 0,
+          aiModel: 'Unknown'
+        };
     }
   };
 
@@ -257,11 +283,10 @@ export default function BillingPage() {
             </div>
             <div className="flex flex-col">
               <img 
-                src="/Images/fakeverifier-official-logo.png" 
+                src="/Images/Logo de FakeVerifier.png" 
                 alt="FakeVerifier Logo" 
-                className="h-12 w-12 object-contain"
+                className="h-32 w-auto object-contain"
               />
-              <div className="text-xs text-muted-foreground">AI News Verification</div>
             </div>
           </div>
           <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => window.history.back()}>
@@ -332,26 +357,36 @@ export default function BillingPage() {
                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
                   <Calendar className="w-5 h-5 text-orange-600" />
                   <div>
-                    <p className="text-sm font-medium">Next Reset</p>
-                    <p className="text-lg font-bold">
-                      {tokenUsage?.resetDate ? (() => {
-                        try {
-                          const date = new Date(tokenUsage.resetDate);
-                          return isNaN(date.getTime()) ? 'N/A' : date.toLocaleDateString();
-                        } catch {
-                          return 'N/A';
-                        }
-                      })() : 'N/A'}
-                    </p>
+                    <p className="text-sm font-medium">Daily Limit</p>
+                    <p className="text-lg font-bold">{planDetails.dailyLimit} verifications</p>
                   </div>
                 </div>
               </div>
+
+              {/* Daily Usage Progress */}
+              {tokenUsage && tokenUsage.dailyUsed !== undefined && (
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span>Daily Usage</span>
+                    <span>{tokenUsage.dailyUsed} / {planDetails.dailyLimit} verifications</span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div 
+                      className="bg-gradient-to-r from-orange-500 to-red-500 h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${Math.min((tokenUsage.dailyUsed / planDetails.dailyLimit) * 100, 100)}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Resets daily at 12:00 AM midnight
+                  </p>
+                </div>
+              )}
 
               {/* Token Usage Progress */}
               {tokenUsage && (
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
-                    <span>Token Usage</span>
+                    <span>Monthly Token Usage</span>
                     <span>{tokenUsage.used.toLocaleString()} / {tokenUsage.total.toLocaleString()}</span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
@@ -482,7 +517,15 @@ export default function BillingPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      Basic AI analysis
+                      5 verifications per day
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      OpenRouter free AI models (Qwen, Mistral, Llama, Gemma)
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      AI model fallback system
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
@@ -502,7 +545,15 @@ export default function BillingPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      Advanced AI analysis with GPT-4o
+                      50 verifications per day
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      OpenAI GPT-4o AI model
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      No rate limits
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
@@ -526,7 +577,15 @@ export default function BillingPage() {
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
-                      Unlimited AI analysis
+                      500 verifications per day
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      OpenAI GPT-4o AI model
+                    </li>
+                    <li className="flex items-center gap-2">
+                      <CheckCircle className="w-4 h-4 text-green-500" />
+                      No rate limits
                     </li>
                     <li className="flex items-center gap-2">
                       <CheckCircle className="w-4 h-4 text-green-500" />
@@ -562,6 +621,9 @@ export default function BillingPage() {
                     • Tokens reset monthly on your billing cycle
                   </p>
                   <p className="text-muted-foreground">
+                    • Daily limits reset at 12:00 AM midnight
+                  </p>
+                  <p className="text-muted-foreground">
                     • Plan changes take effect immediately
                   </p>
                   <p className="text-muted-foreground">
@@ -569,6 +631,9 @@ export default function BillingPage() {
                   </p>
                   <p className="text-muted-foreground">
                     • You can upgrade or downgrade at any time
+                  </p>
+                  <p className="text-muted-foreground">
+                    • Free users get AI model fallback system for better reliability
                   </p>
                   {billingInfo?.subscription?.cancel_at_period_end && (
                     <p className="text-orange-600 font-medium">
@@ -697,3 +762,4 @@ export default function BillingPage() {
     </div>
   );
 }
+

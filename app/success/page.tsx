@@ -87,11 +87,11 @@ function SuccessPageContent() {
               <Bot className="h-4 w-4 text-white" />
             </div>
             <div className="flex flex-col">
-                                                           <img 
-                  src="/Images/fakeverifier-official-logo.png" 
-                  alt="FakeVerifier Logo" 
-                  className="h-12 w-12 object-contain"
-                />
+                                                                         <img 
+                src="/Images/Logo de FakeVerifier.png" 
+                alt="FakeVerifier Logo" 
+                className="h-32 w-auto object-contain"
+              />
               <div className="text-xs text-muted-foreground">AI News Verification</div>
             </div>
           </div>

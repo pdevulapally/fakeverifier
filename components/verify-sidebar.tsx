@@ -157,9 +157,9 @@ export function VerifySidebar({
           </div>
           <div className="flex flex-col min-w-0">
             <img 
-              src="/Images/fakeverifier-official-logo.png" 
+              src="/Images/Logo de FakeVerifier.png" 
               alt="FakeVerifier Logo" 
-              className="h-10 w-10 object-contain"
+              className="h-24 w-auto object-contain"
             />
             <span className="text-xs text-sidebar-foreground/70 truncate">AI News Verification</span>
           </div>

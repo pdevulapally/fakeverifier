@@ -459,8 +459,8 @@ export default function VerifyPage() {
                              <div className="flex items-center justify-center">
                  <img 
                    src="/Images/FakeVerifierlogoicon.png" 
-                   alt="FakeVerifier Logo Icon" 
-                   className="h-16 w-16 object-contain"
+                   alt="FakeVerifier Logo" 
+                   className="h-17 w-auto object-contain"
                  />
                </div>
             </div>
