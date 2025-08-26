@@ -31,6 +31,7 @@ const TIERS = [
     description: 'Perfect for getting started',
     features: [
       '50 verification tokens per month',
+      '5 verifications per day',
       'Free AI models (Qwen, Mistral, Llama)',
       'Standard response time',
       'Community support',
@@ -52,6 +53,7 @@ const TIERS = [
     description: 'Great for power users',
     features: [
       '500 verification tokens per month',
+      '50 verifications per day',
       'Premium AI models (OpenAI GPT-4o & GPT-4o Search)',
       'Faster response time',
       'Priority support',
@@ -76,6 +78,7 @@ const TIERS = [
     description: 'For teams and organizations',
     features: [
       '5000 verification tokens per month',
+      '500 verifications per day',
       'Unlimited AI analysis with GPT-4o',
       'Instant response time',
       'Dedicated support',

@@ -70,15 +70,15 @@ export function createAIClient(userTier: 'FREE' | 'PAID') {
     if (!process.env.OPENROUTER_API_KEY) {
       throw new Error('OPENROUTER_API_KEY environment variable is required for free tier users');
     }
-    if (!process.env.NEXT_PUBLIC_APP_URL) {
-      throw new Error('NEXT_PUBLIC_APP_URL environment variable is required for OpenRouter integration');
-    }
+    
+    // Use a fallback for NEXT_PUBLIC_APP_URL if not set
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
     
     return new OpenAI({
       apiKey: process.env.OPENROUTER_API_KEY,
       baseURL: 'https://openrouter.ai/api/v1',
       defaultHeaders: {
-        'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL,
+        'HTTP-Referer': appUrl,
         'X-Title': 'FakeVerifier'
       }
     });

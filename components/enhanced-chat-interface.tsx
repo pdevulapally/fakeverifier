@@ -6,8 +6,9 @@ import { Bot, User, Clock, Sparkles } from "lucide-react"
 import { VerificationResultCard } from "./verification-result-card"
 import { EnhancedChatInput } from "./enhanced-chat-input"
 
-import { consumeTokens, getCurrentUser } from "@/lib/firebase"
+import { consumeTokens, getCurrentUser, getUserTokenUsage } from "@/lib/firebase"
 import { toast } from "sonner"
+import { DailyLimitModal } from "./daily-limit-modal"
 
 interface Message {
   id: string
@@ -147,7 +148,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
       return [{
         id: "initial-" + Date.now(),
         type: "assistant" as const,
-        content: "Hello! I'm FakeVerifier, your AI-powered news credibility assistant. Share a news article, headline, or URL and I'll help you verify their credibility using advanced AI analysis powered by GPT-4o. You can paste text, share links, or describe what you've heard.",
+        content: "Hello! I'm FakeVerifier, your AI-powered news credibility assistant. Share a news article, headline, or URL and I'll help you verify their credibility using advanced AI analysis. You can paste text, share links, or describe what you've heard.",
         timestamp: new Date(),
       }]
     }
@@ -156,6 +157,17 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
     const messagesRef = useRef<Message[]>(messages)
     const [isLoading, setIsLoading] = useState(false)
     const messagesEndRef = useRef<HTMLDivElement>(null)
+    
+    // Daily limit modal state
+    const [showDailyLimitModal, setShowDailyLimitModal] = useState(false)
+    const [tokenUsage, setTokenUsage] = useState<any>(null)
+    const [currentPlan, setCurrentPlan] = useState<"free" | "pro" | "enterprise" | null>(null)
+
+    const getModelLabel = (fallbackModel?: string) => {
+      if (fallbackModel && typeof fallbackModel === 'string' && fallbackModel.length > 0) return fallbackModel
+      if (currentPlan === 'pro' || currentPlan === 'enterprise') return 'OpenAI GPT-4o'
+      return 'free AI models'
+    }
 
     // Expose methods to parent component
     useImperativeHandle(ref, () => ({
@@ -164,7 +176,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
           {
             id: "clear-" + Date.now().toString(),
             type: "assistant" as const,
-            content: "Hello! I'm FakeVerifier, your AI-powered news credibility assistant. Share a news article, headline, or URL and I'll help you verify their credibility using advanced AI analysis powered by GPT-4o. You can paste text, share links, or describe what you've heard.",
+            content: `Hello! I'm FakeVerifier, your AI-powered news credibility assistant. Share a news article, headline, or URL and I'll help you verify their credibility using advanced AI analysis (${getModelLabel()}). You can paste text, share links, or describe what you've heard.`,
             timestamp: new Date(),
           },
         ]
@@ -203,7 +215,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
             const welcomeMessage: Message = {
               id: "welcome-" + Date.now(),
               type: "assistant",
-              content: "Hello! I'm FakeVerifier, your AI-powered news credibility assistant. Share a news article, headline, or URL and I'll help you verify their credibility using advanced AI analysis powered by GPT-4o. You can paste text, share links, or describe what you've heard.",
+              content: `Hello! I'm FakeVerifier, your AI-powered news credibility assistant. Share a news article, headline, or URL and I'll help you verify their credibility using advanced AI analysis (${getModelLabel()}). You can paste text, share links, or describe what you've heard.`,
               timestamp: new Date(),
             }
 
@@ -219,7 +231,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
            const assistantMessage: Message = {
              id: (Date.now() + 1).toString(),
              type: "assistant",
-             content: `I've completed a comprehensive AI-powered analysis of your content using GPT-4o with real-time news search. Here's what I found:`,
+             content: `I've completed a comprehensive AI-powered analysis of your content using ${getModelLabel(item?.aiAnalysis?.model)} with real-time news search. Here's what I found:`,
              timestamp: new Date(timestamp.getTime() + 1000), // Slightly after user message
              // Use existing analysis data if available, otherwise create fallback
              analysis: item.analysis || {
@@ -227,7 +239,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
                sources: ["Previous verification data"],
                verdict: item.verdict,
                reasoning: [
-                 "AI analysis completed using GPT-4o with real-time news search for advanced content verification",
+                 `AI analysis completed using ${getModelLabel(item?.aiAnalysis?.model)} with real-time news search for advanced content verification`,
                  "Comprehensive analysis of content credibility and authenticity with current news context",
                  item.verdict === "real" || item.verdict === "likely-real"
                    ? "Content matches verified reports from multiple credible sources and current news data"
@@ -267,7 +279,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
              // Use existing aiAnalysis data if available, otherwise create fallback
              aiAnalysis: item.aiAnalysis || {
                analysis: `Previous verification result: ${item.verdict} with ${item.score}% confidence. This content was analyzed using AI-powered verification tools with real-time news search integration.`,
-               model: "GPT-4o with Real-time Search",
+               model: getModelLabel(),
                timestamp: timestamp.toISOString(),
                structuredData: {
                  verdict: item.verdict,
@@ -317,19 +329,28 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
       scrollToBottom()
     }, [messages])
 
-
-
     useEffect(() => {
-      messagesRef.current = messages
-      // Save messages to localStorage
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('fakeverifier-messages', JSON.stringify(messages))
-      }
-      // Notify parent component about messages update
-      if (onMessagesUpdate) {
-        onMessagesUpdate(messages)
-      }
-    }, [messages, onMessagesUpdate])
+      (async () => {
+        try {
+          const usage = await getUserTokenUsage()
+          if (usage?.success && usage.data?.plan) {
+            setCurrentPlan(usage.data.plan)
+            setMessages(prev => {
+              if (prev.length === 1 && prev[0].type === 'assistant') {
+                const updated = [...prev]
+                updated[0] = {
+                  ...updated[0],
+                  content: "Hello! I'm FakeVerifier, your AI-powered news credibility assistant. Share a news article, headline, or URL and I'll help you verify their credibility using advanced AI analysis (" + getModelLabel() + "). You can paste text, share links, or describe what you've heard."
+                }
+                messagesRef.current = updated
+                return updated
+              }
+              return prev
+            })
+          }
+        } catch {}
+      })()
+    }, [])
 
     const handleSendMessage = async (message: string, files: File[], detectedContent: any) => {
       if ((!message.trim() && files.length === 0) || isLoading) return
@@ -356,6 +377,28 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
         if (!currentUser) {
           toast.error('Please sign in to use the verification service')
           throw new Error('Please sign in to use the verification service')
+        }
+
+        // Check token usage and daily limits before consuming tokens
+        const usageResult = await getUserTokenUsage()
+        if (!usageResult.success) {
+          throw new Error(usageResult.error || 'Unable to load token usage')
+        }
+        
+        const usage = usageResult.data as any
+        
+        // Check daily limit for free users
+        if (usage.plan === 'free' && usage.dailyUsed >= 5) {
+          setTokenUsage(usage)
+          setShowDailyLimitModal(true)
+          return
+        }
+        
+        // Check monthly limit
+        const remaining = (usage.total || 0) - (usage.used || 0)
+        if (remaining <= 0) {
+          toast.error('Monthly token limit exceeded. Please upgrade your plan.')
+          return
         }
 
         // Consume tokens before making the request
@@ -438,7 +481,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           type: "assistant",
-          content: `I've completed a comprehensive AI-powered analysis of your content using GPT-4o with real-time news search. Here's what I found:`,
+          content: `I've completed a comprehensive AI-powered analysis of your content using ${getModelLabel()} with real-time news search. Here's what I found:`,
           timestamp: new Date(),
           aiAnalysis: aiData,
           analysis: {
@@ -685,9 +728,9 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
                    <div className="mt-4 p-3 sm:p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg border border-blue-200">
                      <div className="flex items-center gap-2 mb-3 flex-wrap">
                        <Sparkles className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                       <h4 className="font-semibold text-blue-900 text-sm sm:text-base">AI Analysis (GPT-4o Search)</h4>
+                       <h4 className="font-semibold text-blue-900 text-sm sm:text-base">AI Analysis ({getModelLabel(message.aiAnalysis?.model)})</h4>
                        <Badge variant="outline" className="text-xs flex-shrink-0">
-                         {message.aiAnalysis.model}
+                         {getModelLabel(message.aiAnalysis?.model)}
                        </Badge>
                      </div>
                     
@@ -910,6 +953,18 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
             </p>
           </div>
        </Card>
+       
+       {/* Daily Limit Modal */}
+       {tokenUsage && (
+         <DailyLimitModal
+           isOpen={showDailyLimitModal}
+           onClose={() => setShowDailyLimitModal(false)}
+           currentPlan={tokenUsage.plan || 'free'}
+           dailyUsed={tokenUsage.dailyUsed || 0}
+           dailyLimit={tokenUsage.plan === 'free' ? 5 : tokenUsage.plan === 'pro' ? 50 : 500}
+           resetTime={tokenUsage.dailyResetDate ? new Date(tokenUsage.dailyResetDate) : new Date()}
+         />
+       )}
      </div>
    )
  })

@@ -176,6 +176,15 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
     }
     return false
   }
+  
+  const getDailyLimit = () => {
+    switch (tokenUsage.plan) {
+      case 'free': return 5
+      case 'pro': return 50
+      case 'enterprise': return 500
+      default: return 5
+    }
+  }
 
   const formatResetDate = (date: Date | string) => {
     try {
@@ -289,6 +298,27 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
             {tokenUsage.plan === "free" ? "Free Plan" : `${tokenUsage.plan.toUpperCase()} Plan`}
           </Badge>
         </div>
+        
+        {/* Daily Limit Display */}
+        {tokenUsage.plan === "free" && (
+          <div className="mb-3 p-3 bg-orange-50 border border-orange-200 rounded-lg">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-orange-800">Daily Limit</span>
+              <Badge variant="outline" className="text-orange-700 border-orange-300">
+                {tokenUsage.dailyUsed || 0}/{getDailyLimit()} verifications
+              </Badge>
+            </div>
+            <div className="w-full bg-orange-200 rounded-full h-2">
+              <div 
+                className="bg-orange-500 h-2 rounded-full transition-all duration-300"
+                style={{ width: `${Math.min(((tokenUsage.dailyUsed || 0) / getDailyLimit()) * 100, 100)}%` }}
+              />
+            </div>
+            <p className="text-xs text-orange-600 mt-1">
+              Resets at midnight • {formatResetDate(tokenUsage.dailyResetDate)}
+            </p>
+          </div>
+        )}
 
         <div className="space-y-3">
                      <div className="flex items-center justify-between text-sm">
@@ -310,17 +340,10 @@ export function TokenSystem({ onTokenDepleted, onUpgradeClick, refreshTrigger }:
             )}
           />
 
-          <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-xs text-gray-500">
             <span>{getRemainingTokens()} tokens remaining</span>
             <span>{formatResetDate(tokenUsage.resetDate)}</span>
           </div>
-
-                     {/* Show daily usage info for free users */}
-           {tokenUsage.plan === "free" && (
-             <div className="text-xs text-gray-500">
-               <span>Today: {tokenUsage.dailyUsed || 0}/5 tokens (from monthly allocation)</span>
-             </div>
-           )}
 
                      {isDailyLimitReached() && (
              <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md">
