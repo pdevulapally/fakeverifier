@@ -65,7 +65,7 @@ export const metadata: Metadata = {
   },
   metadataBase: new URL('https://www.fakeverifier.co.uk'),
   alternates: {
-    canonical: 'https://www.fakeverifier.co.uk',
+    canonical: 'https://www.fakeverifier.co.uk/',
   },
   openGraph: {
     type: 'website',
@@ -130,6 +130,11 @@ export default function RootLayout({
          {/* Additional Favicon Formats */}
          <link rel="mask-icon" href="/safari-pinned-tab.svg" color="#2563eb" />
          <link rel="shortcut icon" href="/favicon.ico" />
+         
+         {/* Additional SEO Meta Tags */}
+         <meta name="google-site-verification" content="your-google-verification-code" />
+         <meta name="msvalidate.01" content="your-bing-verification-code" />
+         <meta name="yandex-verification" content="your-yandex-verification-code" />
         
         {/* Structured Data */}
         <script
