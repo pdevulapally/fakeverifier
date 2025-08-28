@@ -132,9 +132,8 @@ export default function RootLayout({
          <link rel="shortcut icon" href="/favicon.ico" />
          
          {/* Additional SEO Meta Tags */}
-         <meta name="google-site-verification" content="your-google-verification-code" />
-         <meta name="msvalidate.01" content="your-bing-verification-code" />
-         <meta name="yandex-verification" content="your-yandex-verification-code" />
+         <meta name="google-site-verification" content="nwmeBZx5vJ5quPUWRA1j8NvCkrII6Ai6WSjPExeUwsE" />
+         <meta name="msvalidate.01" content="66FF881AD1C74DCE9085B91C0D19AB59" />
         
         {/* Structured Data */}
         <script
