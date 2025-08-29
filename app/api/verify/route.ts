@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { adminAuth } from '@/lib/firebase-admin';
 import { getUserTier, createAIClient, getModelForUseCase, getModelParams, getModelConfig, markModelRateLimited, markModelUsed, getRateLimitMessage, getUpgradeSuggestion } from '@/lib/model-selection';
+import { performGoogleSearch, performNewsSearch, getSearchQuota } from '@/lib/serpapi';
 
 // Utility functions for retry logic and error handling
 function sleep(ms: number): Promise<void> {
@@ -96,6 +97,102 @@ function extractSources(response: string): string[] {
   }).filter(url => url.length > 0) || ["AI analysis based on available information"];
 }
 
+// Perform intelligent fact-checking searches using SerpAPI
+async function performFactCheckingSearches(content: string): Promise<{
+  googleResults: any[];
+  newsResults: any[];
+  searchQueries: string[];
+}> {
+  try {
+    // Check if we have search quota available
+    const quota = await getSearchQuota();
+    if (quota.searchesUsed >= quota.searchesLimit) {
+      console.log('Search quota exceeded, skipping SerpAPI searches');
+      return { googleResults: [], newsResults: [], searchQueries: [] };
+    }
+
+    // Extract key claims and entities from content for search queries
+    const searchQueries = generateSearchQueries(content);
+    
+    let googleResults: any[] = [];
+    let newsResults: any[] = [];
+
+    // Perform Google search for fact-checking
+    if (searchQueries.length > 0) {
+      try {
+        const googleSearchQuery = searchQueries[0]; // Use the most relevant query
+        const googleData = await performGoogleSearch(googleSearchQuery, {
+          num: 5,
+          gl: 'uk',
+          hl: 'en',
+          safe: 'active'
+        });
+        
+        if (googleData.organic_results) {
+          googleResults = googleData.organic_results;
+        }
+      } catch (error) {
+        console.error('Google search failed:', error);
+      }
+    }
+
+    // Perform news search for recent coverage
+    if (searchQueries.length > 0) {
+      try {
+        const newsSearchQuery = searchQueries[0]; // Use the most relevant query
+        const newsData = await performNewsSearch(newsSearchQuery, {
+          num: 5,
+          gl: 'uk',
+          hl: 'en'
+        });
+        
+        if (newsData.news_results) {
+          newsResults = newsData.news_results;
+        }
+      } catch (error) {
+        console.error('News search failed:', error);
+      }
+    }
+
+    return { googleResults, newsResults, searchQueries };
+  } catch (error) {
+    console.error('Fact-checking searches failed:', error);
+    return { googleResults: [], newsResults: [], searchQueries: [] };
+  }
+}
+
+// Generate intelligent search queries from content
+function generateSearchQueries(content: string): string[] {
+  const queries: string[] = [];
+  
+  // Extract potential claims, names, and key phrases
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  
+  for (const sentence of sentences.slice(0, 3)) { // Limit to first 3 sentences
+    const cleanSentence = sentence.trim();
+    if (cleanSentence.length > 20 && cleanSentence.length < 200) {
+      // Add "fact check" to make it more specific
+      queries.push(`"${cleanSentence}" fact check`);
+    }
+  }
+  
+  // Extract potential names (capitalized words that might be people/organizations)
+  const nameMatches = content.match(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g) || [];
+  for (const name of nameMatches.slice(0, 2)) {
+    queries.push(`${name} news fact check`);
+  }
+  
+  // If no good queries found, use a general fact-checking query
+  if (queries.length === 0) {
+    const keyWords = content.split(/\s+/).filter(word => word.length > 4).slice(0, 3);
+    if (keyWords.length > 0) {
+      queries.push(`${keyWords.join(' ')} fact check news`);
+    }
+  }
+  
+  return queries.slice(0, 3); // Limit to 3 queries
+}
+
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
   
@@ -146,6 +243,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`User tier: ${userTier}, User ID: ${userId}`);
 
+    // Perform SerpAPI fact-checking searches
+    const { googleResults, newsResults, searchQueries } = await performFactCheckingSearches(input);
+
     // Create AI client based on user tier
     const aiClient = createAIClient(userTier);
     const modelParams = getModelParams(userTier);
@@ -169,18 +269,27 @@ export async function POST(request: NextRequest) {
       console.log(`Attempting AI completion with model: ${modelToUse} (${userTier} tier)`);
       
       try {
+        // Prepare SerpAPI context for the AI
+        const serpApiContext = (googleResults.length > 0 || newsResults.length > 0)
+          ? `\n\nReal-time fact-checking search results:\n${searchQueries.length > 0 ? `Search queries used: ${searchQueries.join(', ')}\n` : ''}${googleResults.length > 0 ? `\nGoogle search results:\n${googleResults.map((result: any, index: number) => 
+              `${index + 1}. ${result.title} (${result.link}) - ${result.snippet}`
+            ).join('\n')}` : ''}${newsResults.length > 0 ? `\nNews search results:\n${newsResults.map((result: any, index: number) => 
+              `${index + 1}. ${result.title} (${result.source || 'Unknown'}) - ${result.snippet}`
+            ).join('\n')}` : ''}`
+          : '';
+
         const result = await aiClient.chat.completions.create({
           model: modelToUse,
       messages: [
         { 
           role: "system", 
-          content: `You are an AI assistant specialized in news verification. For each analysis, you must provide:
+          content: `You are an AI assistant specialized in news verification with access to real-time search results. For each analysis, you must provide:
           1. A clear verdict (Likely Real/Likely Fake)
           2. A confidence percentage (always include a number between 0-100)
-          3. Detailed explanation
-          4. Sources checked` 
+          3. Detailed explanation using the provided search results
+          4. Sources checked including real-time search findings` 
         },
-        { role: "user", content: `Verify this news: ${input}` },
+        { role: "user", content: `Verify this news: ${input}${serpApiContext}` },
       ],
           ...modelParams,
         });
@@ -232,7 +341,13 @@ export async function POST(request: NextRequest) {
         explanation: aiResponse,
         userTier,
         model: finalModel,
-        fallbackInfo: fallbackMessage ? { message: fallbackMessage } : undefined
+        fallbackInfo: fallbackMessage ? { message: fallbackMessage } : undefined,
+        serpApiData: {
+          googleResults: googleResults.slice(0, 3), // Return top 3 Google results
+          newsResults: newsResults.slice(0, 3), // Return top 3 news results
+          searchQueries: searchQueries,
+          searchesUsed: googleResults.length > 0 || newsResults.length > 0 ? 2 : 0 // Count searches used
+        }
       }
     });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import OpenAI from 'openai';
 import { adminAuth } from '@/lib/firebase-admin';
 import { getUserTier, createAIClient, getModelForUseCase, getModelParams, getModelConfig, markModelRateLimited, markModelUsed, getRateLimitMessage, getUpgradeSuggestion } from '@/lib/model-selection';
+import { performGoogleSearch, performNewsSearch, getSearchQuota } from '@/lib/serpapi';
 
 const NEWS_API_KEY = process.env.NEWS_API_KEY;
 const NEWSAPI_AI_KEY = process.env.NEWSAPI_AI_KEY;
@@ -181,6 +182,102 @@ async function fetchUrlContent(url: string): Promise<string | null> {
     
     return cleanText.substring(0, 5000); // Limit content length
   }, 2, 1000, 4000);
+}
+
+// Perform intelligent fact-checking searches using SerpAPI
+async function performFactCheckingSearches(content: string): Promise<{
+  googleResults: any[];
+  newsResults: any[];
+  searchQueries: string[];
+}> {
+  try {
+    // Check if we have search quota available
+    const quota = await getSearchQuota();
+    if (quota.searchesUsed >= quota.searchesLimit) {
+      console.log('Search quota exceeded, skipping SerpAPI searches');
+      return { googleResults: [], newsResults: [], searchQueries: [] };
+    }
+
+    // Extract key claims and entities from content for search queries
+    const searchQueries = generateSearchQueries(content);
+    
+    let googleResults: any[] = [];
+    let newsResults: any[] = [];
+
+    // Perform Google search for fact-checking
+    if (searchQueries.length > 0) {
+      try {
+        const googleSearchQuery = searchQueries[0]; // Use the most relevant query
+        const googleData = await performGoogleSearch(googleSearchQuery, {
+          num: 5,
+          gl: 'uk',
+          hl: 'en',
+          safe: 'active'
+        });
+        
+        if (googleData.organic_results) {
+          googleResults = googleData.organic_results;
+        }
+      } catch (error) {
+        console.error('Google search failed:', error);
+      }
+    }
+
+    // Perform news search for recent coverage
+    if (searchQueries.length > 0) {
+      try {
+        const newsSearchQuery = searchQueries[0]; // Use the most relevant query
+        const newsData = await performNewsSearch(newsSearchQuery, {
+          num: 5,
+          gl: 'uk',
+          hl: 'en'
+        });
+        
+        if (newsData.news_results) {
+          newsResults = newsData.news_results;
+        }
+      } catch (error) {
+        console.error('News search failed:', error);
+      }
+    }
+
+    return { googleResults, newsResults, searchQueries };
+  } catch (error) {
+    console.error('Fact-checking searches failed:', error);
+    return { googleResults: [], newsResults: [], searchQueries: [] };
+  }
+}
+
+// Generate intelligent search queries from content
+function generateSearchQueries(content: string): string[] {
+  const queries: string[] = [];
+  
+  // Extract potential claims, names, and key phrases
+  const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 10);
+  
+  for (const sentence of sentences.slice(0, 3)) { // Limit to first 3 sentences
+    const cleanSentence = sentence.trim();
+    if (cleanSentence.length > 20 && cleanSentence.length < 200) {
+      // Add "fact check" to make it more specific
+      queries.push(`"${cleanSentence}" fact check`);
+    }
+  }
+  
+  // Extract potential names (capitalized words that might be people/organizations)
+  const nameMatches = content.match(/\b[A-Z][a-z]+ [A-Z][a-z]+\b/g) || [];
+  for (const name of nameMatches.slice(0, 2)) {
+    queries.push(`${name} news fact check`);
+  }
+  
+  // If no good queries found, use a general fact-checking query
+  if (queries.length === 0) {
+    const keyWords = content.split(/\s+/).filter(word => word.length > 4).slice(0, 3);
+    if (keyWords.length > 0) {
+      queries.push(`${keyWords.join(' ')} fact check news`);
+    }
+  }
+  
+  return queries.slice(0, 3); // Limit to 3 queries
 }
 
 export async function POST(request: NextRequest) {
@@ -396,6 +493,9 @@ export async function POST(request: NextRequest) {
       console.log('Sky News RSS error:', error);
     }
 
+    // Perform SerpAPI fact-checking searches
+    const { googleResults, newsResults, searchQueries } = await performFactCheckingSearches(content);
+    
     // Determine if this is real-time news or older content
     const isRealTimeNews = checkIfRealTimeNews(content, newsData, newsApiAiData, finlightData, nytData, skyNewsData);
     
@@ -531,6 +631,15 @@ IMPORTANT: In the EXPLANATION section, make key terms bold using **term** format
         }).join('\n')}`
       : '';
 
+    // SerpAPI real-time search results
+    const serpApiContext = (googleResults.length > 0 || newsResults.length > 0)
+      ? `\n\nReal-time fact-checking search results:\n${searchQueries.length > 0 ? `Search queries used: ${searchQueries.join(', ')}\n` : ''}${googleResults.length > 0 ? `\nGoogle search results:\n${googleResults.map((result: any, index: number) => 
+          `${index + 1}. ${result.title} (${result.link}) - ${result.snippet}`
+        ).join('\n')}` : ''}${newsResults.length > 0 ? `\nNews search results:\n${newsResults.map((result: any, index: number) => 
+          `${index + 1}. ${result.title} (${result.source || 'Unknown'}) - ${result.snippet}`
+        ).join('\n')}` : ''}`
+      : '';
+
     const userPrompt = `Analyze and verify this ${type} content for credibility and authenticity using ${isRealTimeNews ? 'real-time search capabilities and current news data' : 'provided news data from multiple sources including NewsAPI, NewsAPI.ai, Finlight, New York Times, and Sky News RSS'}. Also detect if the content appears to be AI-generated:
 
 "${content}"${urlAnalysis}${urlContent}
@@ -541,7 +650,7 @@ IMPORTANT: ${isRealTimeNews ? 'Use your search capabilities to find the most rel
 
 FORMATTING: Write clear, well-structured explanations. Use **bold** formatting for key terms like "Real", "Fake", "Questionable", etc., but do NOT wrap entire verdicts in ** symbols. Make the explanation easy to read and understand.
 
-Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sources and current context in your analysis. Cross-reference with all available ${isRealTimeNews ? 'search results' : 'news APIs'} and analyze for AI-generated content patterns.${isRealTimeNews ? '' : `${newsContext}${newsApiAiContext}${finlightContext}${nytContext}${skyNewsContext}${videoContext}`}`;
+Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sources and current context in your analysis. Cross-reference with all available ${isRealTimeNews ? 'search results' : 'news APIs'} and analyze for AI-generated content patterns.${isRealTimeNews ? '' : `${newsContext}${newsApiAiContext}${finlightContext}${nytContext}${skyNewsContext}${videoContext}${serpApiContext}`}`;
     
     // Create AI client based on user tier
     const aiClient = createAIClient(userTier);
@@ -742,6 +851,12 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
       newsData: sortedSources, // Return only the most relevant sources
       videoData: videoData.sort((a, b) => (b.relevance || 0) - (a.relevance || 0)).slice(0, 3), // Return top 3 most relevant videos
       urlsAnalyzed: urls,
+      serpApiData: {
+        googleResults: googleResults.slice(0, 3), // Return top 3 Google results
+        newsResults: newsResults.slice(0, 3), // Return top 3 news results
+        searchQueries: searchQueries,
+        searchesUsed: googleResults.length > 0 || newsResults.length > 0 ? 2 : 0 // Count searches used
+      },
       apiSelection: {
         selectedApis: apiSelection.selectedApis,
         reasoning: apiSelection.reasoning
