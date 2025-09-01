@@ -136,3 +136,14 @@
     transform: rotate(360deg);
   }
 }
+
+/* Cookie banner spacing to prevent content overlap */
+body.cookie-banner-visible {
+  padding-bottom: 180px; /* Adjust based on banner height */
+}
+
+@media (min-width: 640px) {
+  body.cookie-banner-visible {
+    padding-bottom: 120px; /* Smaller padding on larger screens */
+  }
+}

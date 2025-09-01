@@ -50,6 +50,20 @@ export function CookieBanner() {
     }
   }, [])
 
+  // Add body class when banner is shown to prevent content overlap
+  useEffect(() => {
+    if (showBanner) {
+      document.body.classList.add('cookie-banner-visible')
+    } else {
+      document.body.classList.remove('cookie-banner-visible')
+    }
+    
+    // Cleanup on unmount
+    return () => {
+      document.body.classList.remove('cookie-banner-visible')
+    }
+  }, [showBanner])
+
   const handleAcceptAll = () => {
     const allAccepted: CookiePreferences = {
       necessary: true,
@@ -111,44 +125,44 @@ export function CookieBanner() {
   return (
     <>
       {/* Mobile-First Cookie Banner */}
-      <div className="fixed bottom-0 left-0 right-0 z-50 p-4 bg-white border-t border-gray-200 shadow-lg">
-        <Card className="max-w-4xl mx-auto">
-          <div className="p-4 sm:p-6">
+      <div className="fixed bottom-0 left-0 right-0 z-50 p-2 sm:p-4 max-h-[50vh] overflow-y-auto">
+        <Card className="max-w-4xl mx-auto shadow-lg border-2">
+          <div className="p-3 sm:p-4 md:p-6">
             <div className="flex items-start gap-3 mb-4">
               <div className="flex-shrink-0">
                 <Cookie className="w-6 h-6 text-blue-600" />
               </div>
               <div className="flex-1 min-w-0">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">
                   We use cookies to enhance your experience
                 </h3>
-                <p className="text-sm text-gray-600 mb-4">
+                <p className="text-xs sm:text-sm text-gray-600 mb-3 sm:mb-4 leading-relaxed">
                   We use cookies and similar technologies to help personalize content, 
                   provide and improve our services, and analyze our traffic. 
                   By clicking "Accept All", you consent to our use of cookies.
                 </p>
-                <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-2">
                   <Button 
                     onClick={handleAcceptAll}
-                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700"
+                    className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-sm py-2"
                   >
-                    <Check className="w-4 h-4 mr-2" />
+                    <Check className="w-4 h-4 mr-1" />
                     Accept All
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={handleAcceptNecessary}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto text-sm py-2"
                   >
-                    <Shield className="w-4 h-4 mr-2" />
+                    <Shield className="w-4 h-4 mr-1" />
                     Necessary Only
                   </Button>
                   <Button 
                     variant="outline"
                     onClick={() => setShowPreferences(true)}
-                    className="w-full sm:w-auto"
+                    className="w-full sm:w-auto text-sm py-2"
                   >
-                    <Settings className="w-4 h-4 mr-2" />
+                    <Settings className="w-4 h-4 mr-1" />
                     Customize
                   </Button>
                 </div>
@@ -162,7 +176,7 @@ export function CookieBanner() {
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            <div className="text-xs text-gray-500">
+            <div className="text-[10px] sm:text-xs text-gray-500 mt-2">
               By continuing to use our site, you agree to our{" "}
               <Link href="/cookie-policy" className="text-blue-600 hover:underline">
                 Cookie Policy
