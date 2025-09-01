@@ -89,47 +89,40 @@ export function DailyLimitModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="max-w-md w-[95vw]">
+        <DialogHeader className="pb-3">
+          <DialogTitle className="flex items-center gap-2 text-lg">
             <AlertTriangle className="h-5 w-5 text-orange-500" />
             Daily Limit Reached
           </DialogTitle>
         </DialogHeader>
         
         <div className="space-y-4">
-          {/* Current Usage */}
-          <Card className="p-4 bg-orange-50 border-orange-200">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-sm font-medium text-orange-800">Today's Usage</span>
-              <Badge variant="outline" className="text-orange-700 border-orange-300">
-                {dailyUsed}/{dailyLimit} verifications
-              </Badge>
-            </div>
-            <div className="w-full bg-orange-200 rounded-full h-2">
-              <div 
-                className="bg-orange-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${Math.min((dailyUsed / dailyLimit) * 100, 100)}%` }}
-              />
-            </div>
-          </Card>
+          {/* Usage & Reset Info */}
+          <div className="grid grid-cols-2 gap-3">
+            <Card className="p-3 bg-orange-50 border-orange-200">
+              <div className="text-center">
+                <div className="text-sm font-medium text-orange-800 mb-1">Today's Usage</div>
+                <div className="text-lg font-bold text-orange-700">{dailyUsed}/{dailyLimit}</div>
+                <div className="w-full bg-orange-200 rounded-full h-1.5 mt-2">
+                  <div 
+                    className="bg-orange-500 h-1.5 rounded-full transition-all duration-300"
+                    style={{ width: `${Math.min((dailyUsed / dailyLimit) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            </Card>
 
-          {/* Reset Timer */}
-          <Card className="p-4 bg-blue-50 border-blue-200">
-            <div className="flex items-center gap-2 mb-2">
-              <Clock className="h-4 w-4 text-blue-600" />
-              <span className="text-sm font-medium text-blue-800">Next Reset</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Calendar className="h-4 w-4 text-blue-600" />
-              <span className="text-sm text-blue-700">
-                {resetTime.toLocaleDateString()} at 12:00 AM
-              </span>
-            </div>
-            <div className="mt-1 text-xs text-blue-600">
-              Resets in {formatTimeUntilReset()}
-            </div>
-          </Card>
+            <Card className="p-3 bg-blue-50 border-blue-200">
+              <div className="text-center">
+                <div className="text-sm font-medium text-blue-800 mb-1">Next Reset</div>
+                <div className="text-lg font-bold text-blue-700">{formatTimeUntilReset()}</div>
+                <div className="text-xs text-blue-600 mt-1">
+                  {resetTime.toLocaleDateString()}
+                </div>
+              </div>
+            </Card>
+          </div>
 
           {/* Upgrade Section */}
           {currentPlan === 'free' && (
@@ -139,16 +132,22 @@ export function DailyLimitModal({
                 <span className="font-semibold text-purple-800">Upgrade to Pro</span>
               </div>
               <p className="text-sm text-purple-700 mb-3">
-                {planInfo.upgradeText}
+                Get unlimited daily verifications and unlock premium features
               </p>
-              <ul className="space-y-1 mb-4">
-                {planInfo.features.map((feature, index) => (
-                  <li key={index} className="text-xs text-purple-600 flex items-center gap-2">
-                    <div className="w-1 h-1 bg-purple-400 rounded-full" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
+              <div className="space-y-2 mb-4">
+                <div className="flex items-center gap-2 text-xs text-purple-600">
+                  <div className="w-1.5 h-1.5 bg-purple-400 rounded-full flex-shrink-0" />
+                  Unlimited daily verifications
+                </div>
+                <div className="flex items-center gap-2 text-xs text-purple-600">
+                  <div className="w-1.5 h-1.5 bg-purple-400 rounded-full flex-shrink-0" />
+                  Premium AI models for better accuracy
+                </div>
+                <div className="flex items-center gap-2 text-xs text-purple-600">
+                  <div className="w-1.5 h-1.5 bg-purple-400 rounded-full flex-shrink-0" />
+                  Priority support & faster response times
+                </div>
+              </div>
               <Button 
                 onClick={handleUpgrade}
                 disabled={isUpgrading}
@@ -158,26 +157,6 @@ export function DailyLimitModal({
               </Button>
             </Card>
           )}
-
-          {/* Action Buttons */}
-          <div className="flex gap-2 pt-2">
-            <Button 
-              variant="outline" 
-              onClick={onClose}
-              className="flex-1"
-            >
-              Close
-            </Button>
-            {currentPlan === 'free' && (
-              <Button 
-                onClick={handleUpgrade}
-                disabled={isUpgrading}
-                className="flex-1 bg-purple-600 hover:bg-purple-700"
-              >
-                {isUpgrading ? 'Redirecting...' : 'View Plans'}
-              </Button>
-            )}
-          </div>
         </div>
       </DialogContent>
     </Dialog>
