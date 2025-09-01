@@ -393,7 +393,7 @@ export default function SettingsPage() {
       <div className="bg-white border-b">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-8">
               <Link href="/verify">
                 <Button variant="ghost" size="sm">
                   <ArrowLeft className="w-4 h-4 mr-2" />
@@ -402,7 +402,6 @@ export default function SettingsPage() {
               </Link>
               <div>
                 <h1 className="text-xl font-semibold text-gray-900">Settings</h1>
-                <p className="text-sm text-gray-500">Manage your preferences and account</p>
               </div>
             </div>
             <Button onClick={handleSignOut} variant="outline" size="sm">

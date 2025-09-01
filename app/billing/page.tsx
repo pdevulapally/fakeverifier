@@ -17,11 +17,12 @@ import {
   ArrowDownRight,
   Settings,
   RefreshCw,
-  Bot
+  Zap
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { getCurrentUser, onAuthStateChange, getUserTokenUsage, changeSubscription, getUserStripeSubscription } from '@/lib/firebase';
+import Link from 'next/link';
 import {
   Dialog,
   DialogContent,
@@ -278,15 +279,14 @@ export default function BillingPage() {
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-600">
-              <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-            </div>
             <div className="flex flex-col">
-              <img 
-                src="/Images/Logo de FakeVerifier.png" 
-                alt="FakeVerifier Logo" 
-                className="h-32 w-auto object-contain"
-              />
+              <Link href="/">
+                <img 
+                  src="/Images/Logo de FakeVerifier.png" 
+                  alt="FakeVerifier Logo" 
+                  className="h-24 w-auto object-contain"
+                />
+              </Link>
             </div>
           </div>
           <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => window.history.back()}>
@@ -348,7 +348,7 @@ export default function BillingPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-4 bg-muted/50 rounded-lg">
-                  <Bot className="w-5 h-5 text-blue-600" />
+                  <Zap className="w-5 h-5 text-blue-600" />
                   <div>
                     <p className="text-sm font-medium">Monthly Tokens</p>
                     <p className="text-lg font-bold">{planDetails.tokens.toLocaleString()}</p>
