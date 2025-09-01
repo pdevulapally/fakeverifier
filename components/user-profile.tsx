@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/auth-context';
+import { getUserTokenUsage } from '@/lib/firebase';
 import { signOutUser } from '@/lib/firebase';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -13,12 +14,31 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LogOut, User, Mail, Settings, CreditCard, BarChart3, Shield } from 'lucide-react';
+import { LogOut, User, Mail, Settings, CreditCard, BarChart3, Shield, Crown } from 'lucide-react';
 import Link from 'next/link';
 
 export default function UserProfile() {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [userPlan, setUserPlan] = useState<string>('free');
+
+  useEffect(() => {
+    if (user) {
+      loadUserPlan();
+    }
+  }, [user]);
+
+  const loadUserPlan = async () => {
+    try {
+      const result = await getUserTokenUsage();
+      if (result.success) {
+        const data = result.data as any;
+        setUserPlan(data.plan || 'free');
+      }
+    } catch (error) {
+      console.error('Error loading user plan:', error);
+    }
+  };
 
   const handleSignOut = async () => {
     setLoading(true);
@@ -70,12 +90,21 @@ export default function UserProfile() {
           </Link>
         </DropdownMenuItem>
         
-        <DropdownMenuItem asChild>
-          <Link href="/usage" className="flex items-center">
-            <BarChart3 className="mr-2 h-4 w-4" />
-            <span>Usage & Analytics</span>
-          </Link>
-        </DropdownMenuItem>
+        {userPlan !== 'free' ? (
+          <DropdownMenuItem asChild>
+            <Link href="/usage" className="flex items-center">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              <span>Usage & Analytics</span>
+            </Link>
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem asChild disabled>
+            <span className="flex items-center text-muted-foreground">
+              <BarChart3 className="mr-2 h-4 w-4" />
+              Usage & Analytics (Pro+ Required)
+            </span>
+          </DropdownMenuItem>
+        )}
         
         <DropdownMenuItem asChild>
           <Link href="/billing" className="flex items-center">

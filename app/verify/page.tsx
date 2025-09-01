@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import ProtectedRoute from "@/components/protected-route"
-import { getVerificationHistory, saveVerificationData, deleteVerificationData, VerificationData, onAuthStateChange, getCurrentUser, signOutUser } from "@/lib/firebase"
+import { getVerificationHistory, saveVerificationData, deleteVerificationData, VerificationData, onAuthStateChange, getCurrentUser, signOutUser, getUserTokenUsage } from "@/lib/firebase"
 import { formatTimeAgo } from "@/lib/utils"
 import { Bot, Plus, FileText, Trash2, CheckCircle, XCircle, AlertTriangle, History, Settings, HelpCircle, Clock, Menu, X, User, LogOut, CreditCard, Shield, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -54,6 +54,7 @@ export default function VerifyPage() {
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [currentMessages, setCurrentMessages] = useState<any[]>([])
   const chatInterfaceRef = useRef<any>(null)
+  const [userPlan, setUserPlan] = useState('free')
 
   // Load verification history from Firebase on component mount
   useEffect(() => {
@@ -62,9 +63,11 @@ export default function VerifyPage() {
       setCurrentUser(user)
       if (user) {
         loadVerificationHistory()
+        loadUserPlan()
       } else {
         setVerificationHistory([])
         setIsLoading(false)
+        setUserPlan('free')
       }
     })
 
@@ -154,6 +157,18 @@ export default function VerifyPage() {
       console.error('Error loading verification history:', error)
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const loadUserPlan = async () => {
+    try {
+      const result = await getUserTokenUsage()
+      if (result.success) {
+        const data = result.data as any
+        setUserPlan(data.plan || 'free')
+      }
+    } catch (error) {
+      console.error('Error loading user plan:', error)
     }
   }
 
@@ -652,12 +667,21 @@ export default function VerifyPage() {
                           <span>Full History</span>
                         </SidebarMenuButton>
                       </SidebarMenuItem>
-                      <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => window.location.href = '/usage'}>
-                          <TrendingUp className="w-4 h-4" />
-                          <span>Usage Analytics</span>
-                        </SidebarMenuButton>
-                      </SidebarMenuItem>
+                      {userPlan !== 'free' ? (
+                        <SidebarMenuItem>
+                          <SidebarMenuButton onClick={() => window.location.href = '/usage'}>
+                            <TrendingUp className="w-4 h-4" />
+                            <span>Usage Analytics</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      ) : (
+                        <SidebarMenuItem>
+                          <SidebarMenuButton disabled className="text-muted-foreground">
+                            <TrendingUp className="w-4 h-4" />
+                            <span>Usage Analytics (Pro+ Required)</span>
+                          </SidebarMenuButton>
+                        </SidebarMenuItem>
+                      )}
                       <SidebarMenuItem>
                         <SidebarMenuButton onClick={() => window.location.href = '/settings'}>
                           <Settings className="w-4 h-4" />

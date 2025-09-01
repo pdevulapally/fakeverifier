@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, Search, Sparkles, AlertTriangle, CheckCircle, Clock } from 'lucide-react';
 import { getUserTokenUsage, consumeTokens } from '@/lib/firebase';
+import { DailyLimitModal } from '@/components/daily-limit-modal';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,13 +30,19 @@ interface AnalysisResult {
   timestamp: string;
 }
 
-export default function AISearchPreview() {
+interface AISearchPreviewProps {
+  onTokenConsumed?: () => void;
+}
+
+export default function AISearchPreview({ onTokenConsumed }: AISearchPreviewProps) {
   const [content, setContent] = useState('');
   const [analysisType, setAnalysisType] = useState('news');
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
   const [error, setError] = useState('');
   const [showOutOfTokens, setShowOutOfTokens] = useState(false);
+  const [showDailyLimitModal, setShowDailyLimitModal] = useState(false);
+  const [tokenUsage, setTokenUsage] = useState<any>(null);
 
   const handleAnalysis = async () => {
     if (!content.trim()) {
@@ -48,15 +55,27 @@ export default function AISearchPreview() {
     setResult(null);
 
     try {
-      // Enforce token limit before analysis
+      // Check token usage and daily limits before consuming tokens
       const usageRes = await getUserTokenUsage();
       if (!usageRes.success) {
         throw new Error(usageRes.error || 'Unable to load token usage');
       }
+      
       const usage = usageRes.data as any;
+      setTokenUsage(usage);
+      
+      // Check daily limit for free users
+      if (usage.plan === 'free' && usage.dailyUsed >= 5) {
+        setShowDailyLimitModal(true);
+        setLoading(false);
+        return;
+      }
+      
+      // Check monthly limit
       const remaining = (usage.total || 0) - (usage.used || 0);
       if (remaining <= 0) {
         setShowOutOfTokens(true);
+        setLoading(false);
         return;
       }
 
@@ -81,6 +100,7 @@ export default function AISearchPreview() {
 
       // Consume one token on successful analysis
       await consumeTokens(1);
+      onTokenConsumed?.();
     } catch (err: any) {
       setError(err.message || 'An error occurred during analysis');
     } finally {
@@ -131,6 +151,18 @@ export default function AISearchPreview() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Daily limit modal */}
+      {tokenUsage && (
+        <DailyLimitModal
+          isOpen={showDailyLimitModal}
+          onClose={() => setShowDailyLimitModal(false)}
+          currentPlan={tokenUsage.plan || 'free'}
+          dailyUsed={tokenUsage.dailyUsed || 0}
+          dailyLimit={tokenUsage.plan === 'free' ? 5 : tokenUsage.plan === 'pro' ? 50 : 500}
+          resetTime={tokenUsage.dailyResetDate || new Date(Date.now() + 24 * 60 * 60 * 1000)}
+        />
+      )}
 
       <Card>
         <CardHeader>

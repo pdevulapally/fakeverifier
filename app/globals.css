@@ -125,3 +125,14 @@
     @apply bg-background text-foreground font-sans;
   }
 }
+
+/* Custom animations */
+.spin {
+  animation: spin 5s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

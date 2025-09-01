@@ -82,6 +82,7 @@ export default function UsagePage() {
   const [timeRange, setTimeRange] = useState<"7d" | "30d" | "90d" | "1y">("30d")
   const [showDetailedMetrics, setShowDetailedMetrics] = useState(false)
   const [currentUser, setCurrentUser] = useState<any>(null)
+  const [userPlan, setUserPlan] = useState<string>('free')
 
   useEffect(() => {
     const unsubscribe = onAuthStateChange((user) => {
@@ -106,19 +107,21 @@ export default function UsagePage() {
     try {
       setIsLoading(true)
       
-      // Load token usage
+      // Load token usage to get user plan
       const tokenResult = await getUserTokenUsage()
       if (tokenResult.success) {
-        setTokenUsage(tokenResult.data as TokenUsage & { id: string })
+        const data = tokenResult.data as TokenUsage & { id: string }
+        setTokenUsage(data)
+        setUserPlan(data.plan || 'free')
       }
-
+      
       // Load verification history
       const historyResult = await getVerificationHistory(1000) // Get more data for analytics
       if (historyResult.success) {
         setVerificationHistory(historyResult.data)
       }
     } catch (error) {
-      console.error('Error loading usage data:', error)
+      console.error('Error loading data:', error)
     } finally {
       setIsLoading(false)
     }
@@ -462,93 +465,116 @@ export default function UsagePage() {
               </div>
             )}
 
-            {/* Charts Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Verification Trends */}
-              <div>
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Verification Trends (Last 7 Days)</h3>
-                  <div className="space-y-3">
-                    {analytics.verificationTrends.map((trend, index) => (
-                      <div key={trend.date} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">
-                          {new Date(trend.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                        </span>
-                        <div className="flex items-center gap-4">
-                          <span className="text-sm font-medium">{trend.count} verifications</span>
-                          <span className="text-sm text-gray-500">{trend.tokens} tokens</span>
-                        </div>
-                      </div>
-                    ))}
+            {/* Pro Features Notice for Free Users */}
+            {userPlan === 'free' && (
+              <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-blue-100 rounded-full mb-4">
+                    <BarChart3 className="w-6 h-6 text-blue-600" />
                   </div>
-                </Card>
-              </div>
+                  <h3 className="text-lg font-semibold text-blue-900 mb-2">Advanced Analytics Available</h3>
+                  <p className="text-blue-700 mb-4">
+                    Upgrade to Pro to unlock detailed analytics, trend analysis, and comprehensive reporting.
+                  </p>
+                  <Button 
+                    onClick={() => window.location.href = '/pricing'} 
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Upgrade to Pro
+                  </Button>
+                </div>
+              </Card>
+            )}
 
-                              {/* Verdict Distribution */}
+            {/* Charts Grid - Only for Pro+ Users */}
+            {userPlan !== 'free' && (
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {/* Verification Trends */}
                 <div>
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Verdict Distribution</h3>
-                  <div className="space-y-3">
-                    {analytics.verdictDistribution.map((item) => (
-                      <div key={item.verdict} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <Badge className={`text-xs ${getVerdictColor(item.verdict)}`}>
-                            {item.verdict}
-                          </Badge>
-                          <span className="text-sm text-gray-600">{item.count}</span>
-                        </div>
-                        <span className="text-sm font-medium">{item.percentage.toFixed(1)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-
-                              {/* Content Type Analysis */}
-                <div>
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Type Analysis</h3>
-                  <div className="space-y-3">
-                    {analytics.contentTypeAnalysis.map((item) => (
-                      <div key={item.type} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          {getContentTypeIcon(item.type)}
-                          <span className="text-sm font-medium capitalize">{item.type}</span>
-                          <span className="text-sm text-gray-600">{item.count}</span>
-                        </div>
-                        <span className="text-sm font-medium">{item.percentage.toFixed(1)}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-
-                              {/* Weekly Usage Pattern */}
-                <div>
-                <Card className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Usage Pattern</h3>
-                  <div className="space-y-3">
-                    {analytics.weeklyUsage.map((item) => (
-                      <div key={item.day} className="flex items-center justify-between">
-                        <span className="text-sm text-gray-600">{item.day}</span>
-                        <div className="flex items-center gap-2">
-                          <div className="w-20 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${(item.count / Math.max(...analytics.weeklyUsage.map(w => w.count))) * 100}%` }}
-                            />
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Verification Trends (Last 7 Days)</h3>
+                    <div className="space-y-3">
+                      {analytics.verificationTrends.map((trend, index) => (
+                        <div key={trend.date} className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">
+                            {new Date(trend.date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                          </span>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm font-medium">{trend.count} verifications</span>
+                            <span className="text-sm text-gray-500">{trend.tokens} tokens</span>
                           </div>
-                          <span className="text-sm font-medium">{item.count}</span>
                         </div>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
 
-            {/* Detailed Metrics */}
-            {showDetailedMetrics && (
+                {/* Verdict Distribution */}
+                <div>
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Verdict Distribution</h3>
+                    <div className="space-y-3">
+                      {analytics.verdictDistribution.map((item) => (
+                        <div key={item.verdict} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <Badge className={`text-xs ${getVerdictColor(item.verdict)}`}>
+                              {item.verdict}
+                            </Badge>
+                            <span className="text-sm text-gray-600">{item.count}</span>
+                          </div>
+                          <span className="text-sm font-medium">{item.percentage.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Content Type Analysis */}
+                <div>
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Content Type Analysis</h3>
+                    <div className="space-y-3">
+                      {analytics.contentTypeAnalysis.map((item) => (
+                        <div key={item.type} className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            {getContentTypeIcon(item.type)}
+                            <span className="text-sm font-medium capitalize">{item.type}</span>
+                            <span className="text-sm text-gray-600">{item.count}</span>
+                          </div>
+                          <span className="text-sm font-medium">{item.percentage.toFixed(1)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Weekly Usage Pattern */}
+                <div>
+                  <Card className="p-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Weekly Usage Pattern</h3>
+                    <div className="space-y-3">
+                      {analytics.weeklyUsage.map((item) => (
+                        <div key={item.day} className="flex items-center justify-between">
+                          <span className="text-sm text-gray-600">{item.day}</span>
+                          <div className="flex items-center gap-2">
+                            <div className="w-20 bg-gray-200 rounded-full h-2">
+                              <div 
+                                className="bg-blue-600 h-2 rounded-full" 
+                                style={{ width: `${(item.count / Math.max(...analytics.weeklyUsage.map(w => w.count))) * 100}%` }}
+                              />
+                            </div>
+                            <span className="text-sm font-medium">{item.count}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </Card>
+                </div>
+              </div>
+            )}
+
+            {/* Detailed Metrics - Only for Pro+ Users */}
+            {showDetailedMetrics && userPlan !== 'free' && (
               <div className="space-y-6">
                 {/* Top Sources */}
                 <Card className="p-6">
@@ -610,6 +636,27 @@ export default function UsagePage() {
                   </div>
                 </Card>
               </div>
+            )}
+
+            {/* Pro Features Notice for Detailed Metrics */}
+            {showDetailedMetrics && userPlan === 'free' && (
+              <Card className="p-6 bg-gradient-to-r from-purple-50 to-pink-50 border-purple-200">
+                <div className="text-center">
+                  <div className="inline-flex items-center justify-center w-12 h-12 bg-purple-100 rounded-full mb-4">
+                    <TrendingUp className="w-6 h-6 text-purple-600" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-purple-900 mb-2">Detailed Analytics Available</h3>
+                  <p className="text-purple-700 mb-4">
+                    Unlock detailed metrics, source analysis, and hourly usage patterns with Pro.
+                  </p>
+                  <Button 
+                    onClick={() => window.location.href = '/pricing'} 
+                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                  >
+                    Upgrade to Pro
+                  </Button>
+                </div>
+              </Card>
             )}
           </div>
         ) : (

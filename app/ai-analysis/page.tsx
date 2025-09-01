@@ -1,11 +1,18 @@
 "use client";
 
+import { useState } from "react";
 import { Header } from "@/components/header";
 import AISearchPreview from "@/components/ai-search-preview";
 import ProtectedRoute from "@/components/protected-route";
 import { TokenSystem } from "@/components/token-system";
 
 export default function AIAnalysisPage() {
+  const [tokenRefreshTrigger, setTokenRefreshTrigger] = useState(0);
+
+  const handleTokenRefresh = () => {
+    setTokenRefreshTrigger(prev => prev + 1);
+  };
+
   return (
     <ProtectedRoute>
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50">
@@ -21,9 +28,12 @@ export default function AIAnalysisPage() {
           </div>
           {/* Token System */}
           <div className="max-w-3xl mx-auto mb-8">
-            <TokenSystem onUpgradeClick={() => (window.location.href = "/pricing")} />
+            <TokenSystem 
+              onUpgradeClick={() => (window.location.href = "/pricing")} 
+              refreshTrigger={tokenRefreshTrigger}
+            />
           </div>
-          <AISearchPreview />
+          <AISearchPreview onTokenConsumed={handleTokenRefresh} />
         </main>
       </div>
     </ProtectedRoute>

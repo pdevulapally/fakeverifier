@@ -597,17 +597,13 @@ export default function PricingPage() {
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 sm:h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-600">
-              <Bot className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-            </div>
-            <div className="flex flex-col">
-                                                                         <img 
+            <a href="/" className="flex items-center">
+              <img 
                 src="/Images/Logo de FakeVerifier.png" 
                 alt="FakeVerifier Logo" 
-                className="h-32 w-auto object-contain"
+                className="h-16 w-auto object-contain sm:h-20"
               />
-              <div className="text-xs text-muted-foreground">AI News Verification</div>
-            </div>
+            </a>
           </div>
           <Button variant="outline" size="sm" className="text-xs sm:text-sm" onClick={() => window.history.back()}>
             Back to App
