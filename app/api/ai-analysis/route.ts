@@ -721,59 +721,9 @@ Include ${isRealTimeNews ? 'real-time search results and' : 'provided'} news sou
     const confidenceMatch = aiResponse.match(/confidence:?\s*(\d+)/i) || aiResponse.match(/(\d+)%/);
     const confidence = confidenceMatch ? parseInt(confidenceMatch[1]) : 75;
 
-    // Determine verdict based on AI response
-    let verdict: "real" | "likely-real" | "likely-fake" | "fake" | "questionable" | "ai-generated" = "questionable";
-    const responseLower = aiResponse.toLowerCase();
-    
-    // Debug logging
+    // Determine verdict based on AI response using dynamic rules
     console.log('AI Response for verdict analysis:', aiResponse.substring(0, 500) + '...');
-    console.log('Response lower case:', responseLower.substring(0, 500) + '...');
-    
-    // Check for explicit verdict statements first
-    if (responseLower.includes("verdict: real")) {
-      verdict = "real";
-    } else if (responseLower.includes("verdict: likely real")) {
-      verdict = "likely-real";
-    } else if (responseLower.includes("verdict: likely fake")) {
-      verdict = "likely-fake";
-    } else if (responseLower.includes("verdict: fake")) {
-      verdict = "fake";
-    } else if (responseLower.includes("verdict: ai-generated")) {
-      verdict = "ai-generated";
-    } else if (responseLower.includes("verdict: questionable")) {
-      verdict = "questionable";
-    } else {
-      // If no explicit verdict found, look for keywords in the explanation
-      // Prioritize positive classifications for real news
-      if (responseLower.includes("real") && !responseLower.includes("fake") && !responseLower.includes("questionable")) {
-        verdict = "real";
-      } else if (responseLower.includes("likely real")) {
-        verdict = "likely-real";
-      } else if (responseLower.includes("likely fake")) {
-        verdict = "likely-fake";
-      } else if (responseLower.includes("fake") && !responseLower.includes("real")) {
-        verdict = "fake";
-      } else if (responseLower.includes("ai-generated")) {
-        verdict = "ai-generated";
-      } else if (responseLower.includes("questionable")) {
-        verdict = "questionable";
-      } else {
-        // If still no clear verdict, check for positive indicators
-        const positiveIndicators = ["verified", "confirmed", "accurate", "true", "legitimate", "credible"];
-        const negativeIndicators = ["false", "misleading", "inaccurate", "unverified", "suspicious"];
-        
-        const positiveCount = positiveIndicators.filter(indicator => responseLower.includes(indicator)).length;
-        const negativeCount = negativeIndicators.filter(indicator => responseLower.includes(indicator)).length;
-        
-        if (positiveCount > negativeCount) {
-          verdict = "real";
-        } else if (negativeCount > positiveCount) {
-          verdict = "fake";
-                 } else {
-           verdict = "questionable";
-         }
-       }
-     }
+    const verdict = determineVerdictDynamically(aiResponse);
      
      // Debug logging for final verdict
      console.log('Final verdict determined:', verdict);
@@ -1420,6 +1370,91 @@ function extractSources(response: string): string[] {
     // Clean up the URL by removing trailing parentheses and brackets
     return url.replace(/[\)\]]+$/, '');
   }).filter(url => url.length > 0) || ["AI analysis based on available information"];
+}
+
+// Helper function: dynamic verdict determination using configurable rules
+type Verdict = "real" | "likely-real" | "likely-fake" | "fake" | "questionable" | "ai-generated";
+
+function determineVerdictDynamically(response: string): Verdict {
+  const text = response.toLowerCase();
+
+  // 1) Prefer explicit verdict tag if present
+  const explicitMatch = text.match(/verdict:\s*(real|likely\s+real|likely\s+fake|fake|ai-generated|ai\s*generated|questionable)/i);
+  if (explicitMatch) {
+    const raw = explicitMatch[1].toLowerCase().replace(/\s+/g, ' ');
+    if (raw === 'real') return 'real';
+    if (raw === 'likely real') return 'likely-real';
+    if (raw === 'likely fake') return 'likely-fake';
+    if (raw === 'fake') return 'fake';
+    if (raw === 'ai-generated' || raw === 'ai generated') return 'ai-generated';
+    if (raw === 'questionable') return 'questionable';
+  }
+
+  // 2) Rule-driven scoring
+  const rules: Array<{ verdict: Verdict; patterns: (string|RegExp)[]; weight?: number }> = [
+    { verdict: 'real', patterns: [' verified', ' confirmed', ' accurate', ' true', ' legitimate', ' credible'] },
+    { verdict: 'likely-real', patterns: [' likely real', ' strong evidence', ' plausible', ' probably true'] },
+    { verdict: 'likely-fake', patterns: [' likely fake', ' dubious', ' probably false', ' suggests false'] },
+    { verdict: 'fake', patterns: [' fake', ' false', ' hoax', ' debunked', ' fabricated', ' misleading'] },
+    { verdict: 'ai-generated', patterns: [' ai-generated', ' ai generated', ' synthetic', ' machine-generated', ' llm-generated'] },
+    { verdict: 'questionable', patterns: [' questionable', ' unclear', ' insufficient evidence', ' mixed signals', ' uncertain', ' unverified', ' inconclusive'] }
+  ];
+
+  // Additional indicator lists to bias scoring
+  const positiveIndicators = ['verified', 'confirmed', 'accurate', 'true', 'legitimate', 'credible'];
+  const negativeIndicators = ['false', 'misleading', 'inaccurate', 'unverified', 'suspicious', 'debunked'];
+
+  const score: Record<Verdict, number> = {
+    'real': 0,
+    'likely-real': 0,
+    'likely-fake': 0,
+    'fake': 0,
+    'questionable': 0,
+    'ai-generated': 0
+  };
+
+  // Count pattern hits per verdict
+  for (const rule of rules) {
+    let localScore = 0;
+    for (const pat of rule.patterns) {
+      if (typeof pat === 'string') {
+        // count occurrences
+        const occurrences = text.split(pat).length - 1;
+        localScore += occurrences;
+      } else {
+        localScore += (text.match(pat) || []).length;
+      }
+    }
+    score[rule.verdict] += (rule.weight || 1) * localScore;
+  }
+
+  // Biasing with indicator lists
+  const positiveCount = positiveIndicators.filter(ind => text.includes(ind)).length;
+  const negativeCount = negativeIndicators.filter(ind => text.includes(ind)).length;
+  score['real'] += positiveCount;
+  score['fake'] += negativeCount;
+
+  // If both "real" and "fake" words present without qualifiers, slightly prefer more specific likely-* if they scored
+  if (text.includes(' real') && text.includes(' fake')) {
+    score['likely-real'] += 0.5;
+    score['likely-fake'] += 0.5;
+  }
+
+  // Choose the verdict with highest score; if tie and all zero, return 'questionable'
+  const entries = Object.entries(score) as [Verdict, number][];
+  entries.sort((a, b) => b[1] - a[1]);
+  const top = entries[0];
+  if (!top || top[1] === 0) return 'questionable';
+
+  // Guardrails: if top is 'real' but there are strong negatives, degrade to 'likely-real'; vice versa for 'fake'
+  if (top[0] === 'real' && negativeCount > positiveCount) {
+    return score['likely-real'] >= score['real'] - 1 ? 'likely-real' : 'questionable';
+  }
+  if (top[0] === 'fake' && positiveCount > negativeCount) {
+    return score['likely-fake'] >= score['fake'] - 1 ? 'likely-fake' : 'questionable';
+  }
+
+  return top[0];
 }
 
 // Helper function to determine which APIs to use based on content analysis
