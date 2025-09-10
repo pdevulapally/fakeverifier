@@ -27,6 +27,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import ProtectedRoute from "@/components/protected-route"
 import { getVerificationHistory, saveVerificationData, deleteVerificationData, VerificationData, onAuthStateChange, getCurrentUser, signOutUser, getUserTokenUsage } from "@/lib/firebase"
 import { formatTimeAgo } from "@/lib/utils"
+import { UTMProvider, useUTM, useInitializeUTMFromURL } from "@/lib/utm-context"
+
+// Extend Window interface for gtag
+declare global {
+  interface Window {
+    gtag?: (...args: any[]) => void;
+  }
+}
 import { Bot, Plus, FileText, Trash2, CheckCircle, XCircle, AlertTriangle, History, Settings, HelpCircle, Clock, Menu, X, User, LogOut, CreditCard, Shield, TrendingUp } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -45,12 +53,16 @@ interface VerificationHistory {
   detectedContent?: any
 }
 
-export default function VerifyPage() {
+function VerifyPageContent() {
   const [verificationHistory, setVerificationHistory] = useState<VerificationHistory[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [currentVerification, setCurrentVerification] = useState<any>(null)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [tokenRefreshTrigger, setTokenRefreshTrigger] = useState(0)
+  
+  // Initialize UTM parameters from URL
+  useInitializeUTMFromURL()
+  const { hasUTMs } = useUTM()
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [currentMessages, setCurrentMessages] = useState<any[]>([])
   const chatInterfaceRef = useRef<any>(null)
@@ -79,6 +91,7 @@ export default function VerifyPage() {
     const urlParams = new URLSearchParams(window.location.search)
     const loadId = urlParams.get('load')
     const isShared = urlParams.get('shared')
+    const queryParam = urlParams.get('q') // New: handle query parameter from hero
     
     if (loadId && verificationHistory.length > 0) {
       const item = verificationHistory.find(h => h.id === loadId)
@@ -125,6 +138,41 @@ export default function VerifyPage() {
         }
       } catch (error) {
         console.error('Error loading shared verification:', error)
+        // Clear the URL parameter even if there's an error
+        window.history.replaceState({}, '', '/verify')
+      }
+    }
+    
+    // Handle query parameter from hero section
+    if (queryParam && chatInterfaceRef.current) {
+      try {
+        const decodedQuery = decodeURIComponent(queryParam)
+        
+        // Prefill the chat input with the query
+        if (chatInterfaceRef.current.prefillInput) {
+          chatInterfaceRef.current.prefillInput(decodedQuery)
+        }
+        
+        // Auto-send after a short delay (400ms as specified)
+        const autoSendTimer = setTimeout(() => {
+          if (chatInterfaceRef.current && chatInterfaceRef.current.autoSend) {
+            // Fire analytics event for verification started
+            if (typeof window !== 'undefined' && window.gtag) {
+              window.gtag('event', 'verify_started', {
+                has_utms: hasUTMs
+              });
+            }
+            chatInterfaceRef.current.autoSend(decodedQuery)
+          }
+        }, 400)
+        
+        // Clear the URL parameter
+        window.history.replaceState({}, '', '/verify')
+        
+        // Cleanup timer if component unmounts
+        return () => clearTimeout(autoSendTimer)
+      } catch (error) {
+        console.error('Error handling query parameter:', error)
         // Clear the URL parameter even if there's an error
         window.history.replaceState({}, '', '/verify')
       }
@@ -811,5 +859,13 @@ export default function VerifyPage() {
         </main>
       </div>
     </ProtectedRoute>
+  )
+}
+
+export default function VerifyPage() {
+  return (
+    <UTMProvider>
+      <VerifyPageContent />
+    </UTMProvider>
   )
 }

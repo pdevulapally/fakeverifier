@@ -27,7 +27,7 @@ export default function LoginPage() {
     setError('');
 
     // Validate email before attempting login
-    const emailValidation = validateEmail(email);
+    const emailValidation = await validateEmail(email);
     if (!emailValidation.isValid) {
       setError(emailValidation.error || 'Please enter a valid email address');
       setLoading(false);

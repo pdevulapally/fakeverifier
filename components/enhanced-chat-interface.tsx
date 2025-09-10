@@ -9,6 +9,7 @@ import { EnhancedChatInput } from "./enhanced-chat-input"
 import { consumeTokens, getCurrentUser, getUserTokenUsage } from "@/lib/firebase"
 import { toast } from "sonner"
 import { DailyLimitModal } from "./daily-limit-modal"
+import { useUTM } from "@/lib/utm-context"
 
 interface Message {
   id: string
@@ -162,6 +163,9 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
     const [showDailyLimitModal, setShowDailyLimitModal] = useState(false)
     const [tokenUsage, setTokenUsage] = useState<any>(null)
     const [currentPlan, setCurrentPlan] = useState<"free" | "pro" | "enterprise" | null>(null)
+    
+    // UTM parameters for analytics
+    const { utmParams } = useUTM()
 
     const getModelLabel = (fallbackModel?: string) => {
       if (fallbackModel && typeof fallbackModel === 'string' && fallbackModel.length > 0) return fallbackModel
@@ -319,6 +323,29 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
             // Handle error silently
           }
        },
+       prefillInput: (text: string) => {
+         // This will be handled by the chat input component
+         // We'll store the text in a ref that the input can access
+         if (typeof window !== 'undefined') {
+           localStorage.setItem('fakeverifier-prefill-text', text)
+         }
+       },
+       autoSend: (text: string) => {
+         // Auto-send the text as a message
+         const userMessage: Message = {
+           id: Date.now().toString(),
+           type: "user",
+           content: text,
+           timestamp: new Date(),
+         }
+         
+         const newMessages = [...messagesRef.current, userMessage]
+         messagesRef.current = newMessages
+         setMessages(newMessages)
+         
+         // Trigger the analysis
+         handleSendMessage(text, [], null)
+       },
     }))
 
     const scrollToBottom = () => {
@@ -415,27 +442,68 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
           analysisType = 'social_media';
         }
 
-        // Call AI analysis API
-        const response = await fetch('/api/ai-analysis', {
+        // Call AI analysis API with UTM parameters
+        const response = await fetch('/api/verify', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            content: message.trim(),
-            type: analysisType,
+            messages: [
+              {
+                role: 'user',
+                content: message.trim()
+              }
+            ],
+            source: 'direct',
+            meta: {
+              utm: utmParams
+            }
           }),
         });
 
-        const aiData = await response.json();
-        
         if (!response.ok) {
-          throw new Error(aiData.error || 'Failed to analyze content');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to analyze content');
+        }
+
+        // Handle streaming response
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullResponse = '';
+        let finalMetadata: any = null;
+
+        if (reader) {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            const chunk = decoder.decode(value);
+            const lines = chunk.split('\n');
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+                
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.type === 'content') {
+                    fullResponse += parsed.content;
+                  } else if (parsed.type === 'metadata') {
+                    finalMetadata = parsed;
+                  }
+                } catch (e) {
+                  // Skip invalid JSON
+                }
+              }
+            }
+          }
         }
 
         // Process AI analysis results
-        const aiAnalysis = aiData.analysis;
-        const structuredData = aiData.structuredData;
+        const aiAnalysis = fullResponse;
+        const structuredData = finalMetadata;
         
         // Use structured data if available, otherwise fall back to parsing
         let credibilityScore = structuredData?.confidence || 70;
@@ -483,7 +551,12 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
           type: "assistant",
           content: `I've completed a comprehensive AI-powered analysis of your content using ${getModelLabel()} with real-time news search. Here's what I found:`,
           timestamp: new Date(),
-          aiAnalysis: aiData,
+          aiAnalysis: {
+            analysis: fullResponse,
+            model: getModelLabel(),
+            timestamp: new Date().toISOString(),
+            structuredData: finalMetadata
+          },
           analysis: {
             credibilityScore,
             sources: sources.length > 0 ? sources : ["AI analysis based on available information"],
@@ -504,12 +577,10 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
               currentContext.length > 0 ? "Current news context analyzed for relevance and accuracy" : "Real-time news data incorporated for comprehensive verification"
             ],
                          evidenceMap: {
-               sources: aiData?.newsData?.slice(0, 6).map((article: any) => ({
-                 name: article.source,
+               sources: finalMetadata?.sources?.slice(0, 6).map((source: string) => ({
+                 name: source,
                  trustRating: Math.floor(Math.random() * 20) + 80, // Dynamic rating
-                 connections: [article.api, "Dynamic Source"],
-                 url: article.url,
-                 publishedAt: article.publishedAt
+                 connections: ["Dynamic Source"],
                })) || [
                  { name: "Dynamic Sources", trustRating: 85, connections: ["Real-time Analysis"] },
                ],
@@ -522,11 +593,7 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
                  ? "Content shows some bias or requires additional verification from multiple sources."
                  : "Content appears to be factually accurate with minimal bias based on cross-referenced sources.",
              },
-                         timeline: aiData?.newsData?.slice(0, 3).map((article: any, index: number) => ({
-               date: new Date(article.publishedAt).toLocaleDateString(),
-               event: article.title.substring(0, 50) + "...",
-               source: article.source
-             })) || [
+                         timeline: [
                { date: new Date().toLocaleDateString(), event: "AI analysis completed", source: "Dynamic Sources" },
              ],
                          deepfakeDetection: hasVideo
@@ -536,14 +603,14 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
                  }
                : undefined,
                          socialHeatmap: {
-               trending: aiData?.newsData && aiData.newsData.length > 3,
+               trending: finalMetadata?.sources && finalMetadata.sources.length > 3,
                platforms: ["Twitter", "Facebook", "Reddit", "LinkedIn"],
                regions: ["North America", "Europe", "Asia-Pacific"],
              },
             multilingualSources: ["English", "Spanish", "French", "German"],
             historicalCredibility: {
               pastAccuracy: verdict === "real" || verdict === "likely-real" ? 85 + Math.floor(Math.random() * 15) : 60 + Math.floor(Math.random() * 20),
-              totalChecks: aiData?.newsData ? aiData.newsData.length + Math.floor(Math.random() * 20) : 25,
+              totalChecks: finalMetadata?.sources ? finalMetadata.sources.length + Math.floor(Math.random() * 20) : 25,
             },
           },
         }
@@ -563,9 +630,9 @@ export const EnhancedChatInterface = forwardRef<any, EnhancedChatInterfaceProps>
             verdict,
             score: credibilityScore,
             content: message,
-            aiAnalysis: aiData,
+            aiAnalysis: assistantMessage.aiAnalysis,
             analysis: assistantMessage.analysis,
-            urlsAnalyzed: aiData?.urlsAnalyzed || [],
+            urlsAnalyzed: finalMetadata?.sources || [],
             detectedContent: detectedContent,
           })
         }
